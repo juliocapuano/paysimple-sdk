@@ -1,5 +1,11 @@
 # Path-based git attributes
 # https://www.kernel.org/pub/software/scm/git/docs/gitattributes.html
+* text=auto
+
+*.css diff=css
+*.html diff=html
+*.md diff=markdown
+*.php diff=php
 
 # Ignore all test and documentation with "export-ignore".
 /.gitattributes     export-ignore
@@ -10,4 +16,5 @@
 /.php_cs            export-ignore
 /.github            export-ignore
 /psalm.xml          export-ignore
+CHANGELOG.md export-ignore
 
