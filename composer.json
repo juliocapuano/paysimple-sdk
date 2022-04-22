@@ -1,6 +1,7 @@
 {
     "name": "juliocapuano/pay-simple-sdk",
     "description": "This is my package PaySimple",
+    "version": "1.0.1",
     "keywords": [
         ".",
         "paysimple_sdk"
@@ -46,6 +47,5 @@
         "sort-packages": true,
         "optimize-autoloader": true
     },
-    "minimum-stability": "dev",
     "prefer-stable": true
 }
