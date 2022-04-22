@@ -1,18 +1,26 @@
 <?php
 
 
-namespace PaySimple\V4;
+namespace PaySimple\V4\Core;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * Class ApiClient
+ * @package PaySimple\V4\Core
+ */
 class ApiClient
 {
     /**
      * @var Client
      */
     private $client;
+    /**
+     * @var bool
+     */
+    private $has_errors = false;
 
     public function __construct(Config $config)
     {
@@ -22,36 +30,37 @@ class ApiClient
     /**
      * @param int $status_code
      * @param Object $content
-     * @return array|bool
+     * @return array
      */
-    private function checkForStatusError(int $status_code, Object $content)
+    private function checkForStatusError(int $status_code, object $content): array
     {
-        $error = false;
-        $data  = ['errors' => []];
+        $this->has_errors = false;
+        $data             = ['errors' => []];
 
         if (in_array($status_code, Config::HTTP_ERRORS_CODES)) { // si son códigos de error
-            $error      = true;
-            $api_errors = $content->Meta->Errors;
+            $this->has_errors = true;
+            $api_errors       = $content->Meta->Errors;
 
             if ($status_code === 500) {
-                $data['errors'][] = "{$api_errors->ErrorCode} - code: {$api_errors->TraceCode}";
+                $data['errors'][] = sprintf("%s - code: %s", $api_errors->ErrorCode, $api_errors->TraceCode);
             } else {
-                foreach ($api_errors->ErrorMessages as $idx => $api_error) {
+                foreach ($api_errors->ErrorMessages as $api_error) {
                     $data['errors'][] = $api_error->Message;
                 }
             }
         }
 
         if (!in_array($status_code, Config::HTTP_SUCCESS_CODES)) { //si no son códigos de error pero tampoco de OK
-            $error            = true;
+            $this->has_errors = true;
             $data['errors'][] = 'Unexpected: ' . json_encode($content);
         }
 
-        if ($error) {
+        if ($this->hasErrors()) {
+            $error = $this->hasErrors();
             return compact('error', 'data');
         }
 
-        return false;
+        return [];
     }
 
 
@@ -59,12 +68,13 @@ class ApiClient
      * @param ResponseInterface $response
      * @return array
      */
-    private function processResponse(ResponseInterface $response)
+    private function processResponse(ResponseInterface $response): array
     {
         $status_code = $response->getStatusCode();
         $content     = json_decode($response->getBody()->getContents());
 
-        if ($error = $this->checkForStatusError($status_code, $content)) {
+        $error = $this->checkForStatusError($status_code, $content);
+        if ($error) {
             return $error;
         }
 
@@ -78,11 +88,11 @@ class ApiClient
 
     /**
      * @param string $endpoint
-     * @param null|array|mixed $data
+     * @param array $data
      * @return array
      * @throws GuzzleException
      */
-    public function post(string $endpoint, array $data = [])
+    final public function post(string $endpoint, array $data = []): array
     {
         $response = $this->client->post($endpoint, ['json' => $data]);
         return $this->processResponse($response);
@@ -94,7 +104,7 @@ class ApiClient
      * @return array
      * @throws GuzzleException
      */
-    public function get(string $endpoint, array $data = [])
+    final public function get(string $endpoint, array $data = []): array
     {
         $response = $this->client->get($endpoint, ['query' => $data]);
         return $this->processResponse($response);
@@ -107,7 +117,7 @@ class ApiClient
      * @return array
      * @throws GuzzleException
      */
-    public function put(string $endpoint, array $data = [])
+    final public function put(string $endpoint, array $data = []): array
     {
         $response = $this->client->put($endpoint, ['json' => $data]);
         return $this->processResponse($response);
@@ -119,9 +129,17 @@ class ApiClient
      * @return array
      * @throws GuzzleException
      */
-    public function delete(string $endpoint, array $data = [])
+    final public function delete(string $endpoint, array $data = []): array
     {
         $response = $this->client->delete($endpoint, ['json' => $data]);
         return $this->processResponse($response);
+    }
+
+    /**
+     * @return bool
+     */
+    final public function hasErrors(): bool
+    {
+        return $this->has_errors;
     }
 }

@@ -3,9 +3,9 @@
 
 namespace PaySimple\V4\Services;
 
-use PaySimple\V4\ApiClient;
+use PaySimple\V4\Core\ApiClient;
 
-class Service
+abstract class Service
 {
 
     /**

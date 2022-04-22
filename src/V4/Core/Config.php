@@ -1,12 +1,16 @@
 <?php
 
-namespace PaySimple\V4;
+namespace PaySimple\V4\Core;
 
+/**
+ * Class Config
+ * @package PaySimple\V4\Core
+ */
 class Config
 {
-    const PRODUCTION_URL     = "https://api.paysimple.com/v4/'";
-    const SANDBOX_URL        = "https://sandbox-api.paysimple.com/v4/";
-    const HTTP_ERRORS_CODES  = [400, 401, 403, 404, 405, 500];
+    const PRODUCTION_URL = "https://api.paysimple.com/v4/'";
+    const SANDBOX_URL = "https://sandbox-api.paysimple.com/v4/";
+    const HTTP_ERRORS_CODES = [400, 401, 403, 404, 405, 500];
     const HTTP_SUCCESS_CODES = [200, 201];
 
 
@@ -30,7 +34,7 @@ class Config
         $this->sandbox = $sandbox;
     }
 
-    public function isSandbox(): bool
+    final public function isSandbox(): bool
     {
         return $this->sandbox;
     }
@@ -38,7 +42,7 @@ class Config
     /**
      * @return array
      */
-    public function generateConfig()
+    final public function generateConfig(): array
     {
         $timestamp = gmdate("c");
         $hmac      = base64_encode(hash_hmac("sha256", $timestamp, $this->token, true));
@@ -47,7 +51,7 @@ class Config
             'base_uri'    => $this->isSandbox() ? Config::SANDBOX_URL : Config::PRODUCTION_URL,
             'http_errors' => false,
             'headers'     => [
-                'Authorization' => "PSSERVER accessid={$this->user}; timestamp={$timestamp}; signature={$hmac}",
+                'Authorization' => sprintf("PSSERVER accessid=%s; timestamp=%s; signature=%s", $this->user, $timestamp, $hmac),
             ]
         ];
     }
