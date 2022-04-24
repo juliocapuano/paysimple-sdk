@@ -1,9 +1,7 @@
 {
     "name": "juliocapuano/pay-simple-sdk",
-    "description": "This is my package PaySimple",
-    "version": "1.0.1",
+    "description": "This package is a simple implementation of the PaySimple Api for PHP",
     "keywords": [
-        ".",
         "paysimple_sdk"
     ],
     "homepage": "https://github.com/juliocapuano/pay_simple_sdk",
