@@ -46,8 +46,7 @@ $customerServiceInstance = $paysimple->customers();
 $accountServiceInstance = $paysimple->accounts();
 $paymentServiceInstance = $paysimple->payments();
 $merchantServiceInstance = $paysimple->merchant();
-//$recurrentPaymentServiceInstance = $paysimple->recurrentPayments(); // not implemented 
-
+$recurrentPaymentServiceInstance = $paysimple->recurrentPayments();
 
 // creating customer instance 
 $customer_data =[...]; // array data 
