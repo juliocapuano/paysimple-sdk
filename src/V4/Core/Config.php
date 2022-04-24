@@ -8,10 +8,10 @@ namespace PaySimple\V4\Core;
  */
 class Config
 {
-    const PRODUCTION_URL = "https://api.paysimple.com/v4/'";
-    const SANDBOX_URL = "https://sandbox-api.paysimple.com/v4/";
-    const HTTP_ERRORS_CODES = [400, 401, 403, 404, 405, 500];
-    const HTTP_SUCCESS_CODES = [200, 201];
+    public const PRODUCTION_URL = "https://api.paysimple.com/v4/'";
+    public const SANDBOX_URL = "https://sandbox-api.paysimple.com/v4/";
+    public const HTTP_ERRORS_CODES = [400, 401, 403, 404, 405, 500];
+    public const HTTP_SUCCESS_CODES = [200, 201];
 
 
     /**
@@ -48,7 +48,7 @@ class Config
         $hmac      = base64_encode(hash_hmac("sha256", $timestamp, $this->token, true));
 
         return [
-            'base_uri'    => $this->isSandbox() ? Config::SANDBOX_URL : Config::PRODUCTION_URL,
+            'base_uri'    => $this->isSandbox() ? self::SANDBOX_URL : self::PRODUCTION_URL,
             'http_errors' => false,
             'headers'     => [
                 'Authorization' => sprintf("PSSERVER accessid=%s; timestamp=%s; signature=%s", $this->user, $timestamp, $hmac),
