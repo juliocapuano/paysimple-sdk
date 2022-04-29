@@ -21,7 +21,7 @@ This package is a simple implementation of the PaySimple Api for PHP
 You can install the package via composer:
 
 ```bash
-composer require juliocapuano/paysimple_sdk
+composer require juliocapuano/pay-simple-sdk
 ```
 
 ## Usage

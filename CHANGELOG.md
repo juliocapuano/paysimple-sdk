@@ -20,3 +20,12 @@ All notable changes to `paysimple-sdk` will be documented in this file.
 ### 1.3.0 - 2022-04-24
 
 - added Recurring Payments module
+
+### 1.3.1 - 2022-04-24
+
+- bug fix
+
+### 1.3.5 - 2022-04-29
+
+- fix README
+- fixed RecurrentPayments

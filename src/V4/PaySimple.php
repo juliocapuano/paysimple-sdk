@@ -64,15 +64,15 @@ class PaySimple
         return new PaymentService($this->client);
     }
 
-//    /**
-//     * Payments Api endpoints
-//     * @see https://documentation.paysimple.com/reference#payment
-//     * @return RecurringPaymentsService
-//     */
-//    public function recurringPayments(): RecurringPaymentsService
-//    {
-//        return new RecurringPaymentsService($this->client);
-//    }
+    /**
+     * Payments Api endpoints
+     * @see https://documentation.paysimple.com/reference#payment
+     * @return RecurringPaymentsService
+     */
+    public function recurringPayments(): RecurringPaymentsService
+    {
+        return new RecurringPaymentsService($this->client);
+    }
 
     /**
      * Payments Api endpoints

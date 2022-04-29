@@ -69,7 +69,7 @@ class CustomerService extends Service
      * @see https://documentation.paysimple.com/reference/customercustomeridaccountid
      * @param int $customer_id
      * @param int $account_id
-     * @return mixed
+     * @return array
      * @throws GuzzleException
      */
     final public function setDefaultAccount(int $customer_id, int $account_id): array
