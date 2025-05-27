@@ -92,7 +92,7 @@ class ApiClient
      * @return array
      * @throws GuzzleException
      */
-    final public function post(string $endpoint, array $data = []): array
+    public function post(string $endpoint, array $data = []): array
     {
         $response = $this->client->post($endpoint, ['json' => $data]);
         return $this->processResponse($response);
@@ -104,7 +104,7 @@ class ApiClient
      * @return array
      * @throws GuzzleException
      */
-    final public function get(string $endpoint, array $data = []): array
+    public function get(string $endpoint, array $data = []): array
     {
         $response = $this->client->get($endpoint, ['query' => $data]);
         return $this->processResponse($response);
@@ -117,7 +117,7 @@ class ApiClient
      * @return array
      * @throws GuzzleException
      */
-    final public function put(string $endpoint, array $data = []): array
+    public function put(string $endpoint, array $data = []): array
     {
         $response = $this->client->put($endpoint, ['json' => $data]);
         return $this->processResponse($response);
@@ -129,7 +129,7 @@ class ApiClient
      * @return array
      * @throws GuzzleException
      */
-    final public function delete(string $endpoint, array $data = []): array
+    public function delete(string $endpoint, array $data = []): array
     {
         $response = $this->client->delete($endpoint, ['json' => $data]);
         return $this->processResponse($response);
@@ -138,7 +138,7 @@ class ApiClient
     /**
      * @return bool
      */
-    final public function hasErrors(): bool
+    public function hasErrors(): bool
     {
         return $this->has_errors;
     }

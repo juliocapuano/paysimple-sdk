@@ -3,6 +3,7 @@
 namespace PaySimple\V4\Services;
 
 use GuzzleHttp\Exception\GuzzleException;
+use PaySimple\V4\Core\PaySimpleException;
 
 class AccountService extends Service
 {
@@ -13,12 +14,16 @@ class AccountService extends Service
      *
      * @see https://documentation.paysimple.com/reference/new-credit-card
      * @param array $credit_card
-     * @return array
-     * @throws GuzzleException
+     * @return object
+     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function newCreditCard(array $credit_card): array
+    final public function newCreditCard(array $credit_card): object
     {
-        return $this->client->post('account/creditcard', $credit_card);
+        $response = $this->client->post('account/creditcard', $credit_card);
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
+            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
+        }
+        return $response['data'];
     }
 
     /**
@@ -26,12 +31,16 @@ class AccountService extends Service
      *
      * @see https://documentation.paysimple.com/reference/credit-card
      * @param int $account_id
-     * @return array
-     * @throws GuzzleException
+     * @return object
+     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function getCreditCard(int $account_id): array
+    final public function getCreditCard(int $account_id): object
     {
-        return $this->client->get(sprintf("account/creditcard/%s", $account_id));
+        $response = $this->client->get(sprintf("account/creditcard/%s", $account_id));
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
+            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
+        }
+        return $response['data'];
     }
 
     /**
@@ -39,12 +48,16 @@ class AccountService extends Service
      *
      * @see https://documentation.paysimple.com/reference/update-credit-card
      * @param array $credit_card
-     * @return array
-     * @throws GuzzleException
+     * @return object
+     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function updateCreditCard(array $credit_card): array
+    final public function updateCreditCard(array $credit_card): object
     {
-        return $this->client->put('account/creditcard', $credit_card);
+        $response = $this->client->put('account/creditcard', $credit_card);
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
+            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
+        }
+        return $response['data'];
     }
 
     /**
@@ -52,12 +65,16 @@ class AccountService extends Service
      *
      * @see https://documentation.paysimple.com/reference/delete-credit-card
      * @param int $account_id
-     * @return array
-     * @throws GuzzleException
+     * @return bool
+     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function deleteCreditCard(int $account_id): array
+    final public function deleteCreditCard(int $account_id): bool
     {
-        return $this->client->delete(sprintf("account/creditcard/%s", $account_id));
+        $response = $this->client->delete(sprintf("account/creditcard/%s", $account_id));
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
+            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
+        }
+        return true;
     }
 
 
@@ -69,12 +86,16 @@ class AccountService extends Service
      *
      * @see https://documentation.paysimple.com/reference/new-ach
      * @param array $ach
-     * @return array
-     * @throws GuzzleException
+     * @return object
+     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function newAch(array $ach): array
+    final public function newAch(array $ach): object
     {
-        return $this->client->post('account/ach', $ach);
+        $response = $this->client->post('account/ach', $ach);
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
+            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
+        }
+        return $response['data'];
     }
 
     /**
@@ -82,12 +103,16 @@ class AccountService extends Service
      *
      * @see https://documentation.paysimple.com/reference/ach-record
      * @param int $account_id
-     * @return array
-     * @throws GuzzleException
+     * @return object
+     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function getAch(int $account_id): array
+    final public function getAch(int $account_id): object
     {
-        return $this->client->get(sprintf("account/ach/%s", $account_id));
+        $response = $this->client->get(sprintf("account/ach/%s", $account_id));
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
+            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
+        }
+        return $response['data'];
     }
 
     /**
@@ -95,12 +120,16 @@ class AccountService extends Service
      *
      * @see https://documentation.paysimple.com/reference/update-ach
      * @param array $ach
-     * @return array
-     * @throws GuzzleException
+     * @return object
+     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function updateAch(array $ach): array
+    final public function updateAch(array $ach): object
     {
-        return $this->client->put('account/ach', $ach);
+        $response = $this->client->put('account/ach', $ach);
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
+            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
+        }
+        return $response['data'];
     }
 
     /**
@@ -108,11 +137,15 @@ class AccountService extends Service
      *
      * @see https://documentation.paysimple.com/reference/delete-ach
      * @param int $account_id
-     * @return array
-     * @throws GuzzleException
+     * @return bool
+     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function deleteAch(int $account_id): array
+    final public function deleteAch(int $account_id): bool
     {
-        return $this->client->delete(sprintf("account/ach/%s", $account_id));
+        $response = $this->client->delete(sprintf("account/ach/%s", $account_id));
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
+            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
+        }
+        return true;
     }
 }

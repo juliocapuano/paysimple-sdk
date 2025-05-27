@@ -63,23 +63,22 @@ $new_customer = $customerServiceInstance->new($customer_data);
 composer test
 ```
 
-[comment]: <> (## Changelog)
+## Changelog
 
-[comment]: <> (Please see [CHANGELOG]&#40;CHANGELOG.md&#41; for more information on what has changed recently.)
+Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
 
-[comment]: <> (## Contributing)
+## Contributing
 
-[comment]: <> (Please see [CONTRIBUTING]&#40;.github/CONTRIBUTING.md&#41; for details.)
+Please see [CONTRIBUTING](.github/CONTRIBUTING.md) for details.
 
-[comment]: <> (## Security Vulnerabilities)
+## Security Vulnerabilities
 
-[comment]: <> (Please review [our security policy]&#40;../../security/policy&#41; on how to report security vulnerabilities.)
+Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
 
 ## Credits
 
-- [Julio Capuano](https://github.com/.)
-
-[comment]: <> (- [All Contributors]&#40;../../contributors&#41;)
+- [Julio Capuano](https://github.com/juliocapuano)
+- [All Contributors](../../contributors)
 
 ## License
 

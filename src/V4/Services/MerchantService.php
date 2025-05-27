@@ -3,6 +3,7 @@
 namespace PaySimple\V4\Services;
 
 use GuzzleHttp\Exception\GuzzleException;
+use PaySimple\V4\Core\PaySimpleException;
 
 /**
  * Class MerchantService
@@ -16,11 +17,15 @@ class MerchantService extends Service
      * Get enabled credit card and payment types for merchant
      *
      * @see https://documentation.paysimple.com/reference/payment-options
-     * @return array
-     * @throws GuzzleException
+     * @return object
+     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function paymentOptions(): array
+    final public function paymentOptions(): object
     {
-        return $this->client->get('merchant/paymentoptions');
+        $response = $this->client->get('merchant/paymentoptions');
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
+            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
+        }
+        return $response['data'];
     }
 }
