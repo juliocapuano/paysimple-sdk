@@ -69,7 +69,7 @@ class PaymentService extends Service
      */
     final public function refund(int $payment_id): object
     {
-        $response = $this->client->put(sprintf("payment/%s/reverse", $payment_id));
+        $response = $this->client->put(sprintf("payment/%s/reverse", $payment_id), []);
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
@@ -86,7 +86,7 @@ class PaymentService extends Service
      */
     final public function void(int $payment_id): object
     {
-        $response = $this->client->put(sprintf("payment/%s/void", $payment_id));
+        $response = $this->client->put(sprintf("payment/%s/void", $payment_id), []);
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
