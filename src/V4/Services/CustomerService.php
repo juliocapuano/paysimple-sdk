@@ -4,6 +4,7 @@ namespace PaySimple\V4\Services;
 
 use GuzzleHttp\Exception\GuzzleException;
 use PaySimple\V4\Core\PaySimpleException;
+use PaySimple\V4\Entities\Customer;
 
 /**
  * Class CustomerService
@@ -16,17 +17,21 @@ class CustomerService extends Service
      * Creates a new customer object
      *
      * @see https://documentation.paysimple.com/reference/new-customer
-     * @param array $customer
-     * @return object
+     * @param Customer $customerInput
+     * @return Customer
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function new(array $customer): object
+    final public function new(Customer $customerInput): Customer
     {
-        $response = $this->client->post('customer', $customer);
-        if ($this->client->hasErrors() || !empty($response['error'])) {
+        $requestData = $customerInput->toArray();
+        $response = $this->client->post('customer', $requestData);
+
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        
+        $apiResponseData = $response['data']; // This should be stdClass
+        return Customer::fromStdClass($apiResponseData);
     }
 
     /**
@@ -34,16 +39,17 @@ class CustomerService extends Service
      *
      * @see https://documentation.paysimple.com/reference/customer-2
      * @param int $customer_id
-     * @return object
+     * @return Customer
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function get(int $customer_id): object
+    final public function get(int $customer_id): Customer
     {
         $response = $this->client->get(sprintf("customer/%s", $customer_id));
-        if ($this->client->hasErrors() || !empty($response['error'])) {
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        $apiResponseData = $response['data']; // This should be stdClass
+        return Customer::fromStdClass($apiResponseData);
     }
 
     /**
@@ -51,16 +57,28 @@ class CustomerService extends Service
      *
      * @see https://documentation.paysimple.com/reference/list-customers
      * @param array $params
-     * @return array
+     * @return Customer[]
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
     final public function list(array $params = []): array
     {
         $response = $this->client->get('customer', $params);
-        if ($this->client->hasErrors() || !empty($response['error'])) {
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        
+        $apiResponseDataArray = $response['data']; // This is an array of stdClass objects
+        $customers = [];
+        if (is_array($apiResponseDataArray)) {
+            foreach ($apiResponseDataArray as $customerData) {
+                if ($customerData instanceof \stdClass) {
+                    $customers[] = Customer::fromStdClass($customerData);
+                }
+                // Optionally, handle cases where $customerData is not an stdClass,
+                // though the API client should consistently return this structure.
+            }
+        }
+        return $customers;
     }
 
     /**
@@ -69,15 +87,11 @@ class CustomerService extends Service
      * @see https://documentation.paysimple.com/reference/customercustomeridaccounts
      * @param int $customer_id
      * @return array
-     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
+     * @throws GuzzleException
      */
     final public function listAccounts(int $customer_id): array
     {
-        $response = $this->client->get(sprintf("customer/%s/accounts", $customer_id));
-        if ($this->client->hasErrors() || !empty($response['error'])) {
-            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
-        }
-        return $response['data'];
+        return $this->client->get(sprintf("customer/%s/accounts", $customer_id));
     }
 
     /**
@@ -86,16 +100,12 @@ class CustomerService extends Service
      * @see https://documentation.paysimple.com/reference/customercustomeridaccountid
      * @param int $customer_id
      * @param int $account_id
-     * @return bool
-     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
+     * @return array
+     * @throws GuzzleException
      */
-    final public function setDefaultAccount(int $customer_id, int $account_id): bool
+    final public function setDefaultAccount(int $customer_id, int $account_id): array
     {
-        $response = $this->client->put(sprintf("customer/%s/%s", $customer_id, $account_id));
-        if ($this->client->hasErrors() || !empty($response['error'])) {
-            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
-        }
-        return true;
+        return $this->client->put(sprintf("customer/%s/%s", $customer_id, $account_id));
     }
 
     /**
@@ -104,15 +114,11 @@ class CustomerService extends Service
      * @see https://documentation.paysimple.com/reference/customercustomeridachaccounts
      * @param int $customer_id
      * @return array
-     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
+     * @throws GuzzleException
      */
     final public function achAccounts(int $customer_id): array
     {
-        $response = $this->client->get(sprintf("customer/%s/achaccounts", $customer_id));
-        if ($this->client->hasErrors() || !empty($response['error'])) {
-            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
-        }
-        return $response['data'];
+        return $this->client->get(sprintf("customer/%s/achaccounts", $customer_id));
     }
 
     /**
@@ -121,15 +127,11 @@ class CustomerService extends Service
      * @see https://documentation.paysimple.com/reference/customercustomeridcreditcardaccounts
      * @param int $customer_id
      * @return array
-     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
+     * @throws GuzzleException
      */
     final public function creditCardsAccounts(int $customer_id): array
     {
-        $response = $this->client->get(sprintf("customer/%s/creditcardaccounts", $customer_id));
-        if ($this->client->hasErrors() || !empty($response['error'])) {
-            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
-        }
-        return $response['data'];
+        return $this->client->get(sprintf("customer/%s/creditcardaccounts", $customer_id));
     }
 
     /**
@@ -137,16 +139,12 @@ class CustomerService extends Service
      *
      * @see https://documentation.paysimple.com/reference/customercustomeriddefaultach
      * @param int $customer_id
-     * @return object
-     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
+     * @return array
+     * @throws GuzzleException
      */
-    final public function defaultAch(int $customer_id): object
+    final public function defaultAch(int $customer_id): array
     {
-        $response = $this->client->get(sprintf("customer/%s/defaultach", $customer_id));
-        if ($this->client->hasErrors() || !empty($response['error'])) {
-            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
-        }
-        return $response['data'];
+        return $this->client->get(sprintf("customer/%s/defaultach", $customer_id));
     }
 
     /**
@@ -154,16 +152,12 @@ class CustomerService extends Service
      *
      * @see https://documentation.paysimple.com/reference/customercustomeriddefaultcreditcard
      * @param int $customer_id
-     * @return object
-     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
+     * @return array
+     * @throws GuzzleException
      */
-    final public function defaultCreditCard(int $customer_id): object
+    final public function defaultCreditCard(int $customer_id): array
     {
-        $response = $this->client->get(sprintf("customer/%s/defaultcreditcard", $customer_id));
-        if ($this->client->hasErrors() || !empty($response['error'])) {
-            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
-        }
-        return $response['data'];
+        return $this->client->get(sprintf("customer/%s/defaultcreditcard", $customer_id));
     }
 
     /**
@@ -173,32 +167,37 @@ class CustomerService extends Service
      * @param int $customer_id
      * @param array $params
      * @return array
-     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
+     * @throws GuzzleException
      */
     final public function listOfPayments(int $customer_id, array $params = []): array
     {
-        $response = $this->client->get(sprintf("customer/%s/payments", $customer_id), $params);
-        if ($this->client->hasErrors() || !empty($response['error'])) {
-            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
-        }
-        return $response['data'];
+        return $this->client->get(sprintf("customer/%s/payments", $customer_id), $params);
     }
 
     /**
      * Updates the customer object for the customer specified in the request body.
      *
      * @see https://documentation.paysimple.com/reference/customer-1
-     * @param array $customer
-     * @return object
+     * @param Customer $customerInput
+     * @return Customer
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function update(array $customer): object
+    final public function update(Customer $customerInput): Customer
     {
-        $response = $this->client->put('customer', $customer);
-        if ($this->client->hasErrors() || !empty($response['error'])) {
+        $requestData = $customerInput->toArray();
+        // The 'Id' from $customerInput might be in $requestData.
+        // PaySimple's Update Customer API usually expects the ID in the URL, not the body.
+        // However, their docs for "Update Customer" show the Id in the body.
+        // We'll assume the toArray() method of Customer entity handles this correctly for now.
+        // If 'Id' should NOT be in the body, Customer::toArray() should be adjusted,
+        // or we unset($requestData['Id']) here if it's always present and not desired.
+        
+        $response = $this->client->put('customer', $requestData);
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        $apiResponseData = $response['data']; // This should be stdClass
+        return Customer::fromStdClass($apiResponseData);
     }
 
     /**
@@ -206,15 +205,11 @@ class CustomerService extends Service
      *
      * @see https://documentation.paysimple.com/reference/customercustomerid
      * @param int $customer_id
-     * @return bool
-     * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
+     * @return array
+     * @throws GuzzleException
      */
-    final public function delete(int $customer_id): bool
+    final public function delete(int $customer_id): array
     {
-        $response = $this->client->delete(sprintf("customer/%s", $customer_id)); // Corrected endpoint
-        if ($this->client->hasErrors() || !empty($response['error'])) {
-            throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
-        }
-        return true;
+        return $this->client->delete(sprintf("customer/%s/payments", $customer_id));
     }
 }
