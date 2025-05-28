@@ -4,6 +4,8 @@ namespace PaySimple\V4\Services;
 
 use GuzzleHttp\Exception\GuzzleException;
 use PaySimple\V4\Core\PaySimpleException;
+use PaySimple\V4\Entities\RecurringPaymentSchedule;
+use PaySimple\V4\Entities\Payment;
 
 class RecurringPaymentsService extends Service
 {
@@ -11,17 +13,21 @@ class RecurringPaymentsService extends Service
      * Collect payments on scheduled dates for the specified AccountId.
      *
      * @see https://documentation.paysimple.com/reference/recurringpayment
-     * @param array $recurring_payment
-     * @return object
+     * @param RecurringPaymentSchedule $scheduleInput
+     * @return RecurringPaymentSchedule
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function new(array $recurring_payment): object
+    final public function new(RecurringPaymentSchedule $scheduleInput): RecurringPaymentSchedule
     {
-        $response = $this->client->post('recurringpayment', $recurring_payment);
+        $requestData = $scheduleInput->toArray();
+        $response = $this->client->post('recurringpayment', $requestData);
+
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        
+        $apiResponseData = $response['data']; // This should be stdClass
+        return RecurringPaymentSchedule::fromStdClass($apiResponseData);
     }
 
     /**
@@ -29,16 +35,17 @@ class RecurringPaymentsService extends Service
      *
      * @see https://documentation.paysimple.com/reference/get-recurring-payment
      * @param int $schedule_id
-     * @return object
+     * @return RecurringPaymentSchedule
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function get(int $schedule_id): object
+    final public function get(int $schedule_id): RecurringPaymentSchedule
     {
         $response = $this->client->get(sprintf("recurringpayment/%s", $schedule_id));
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        $apiResponseData = $response['data']; // This should be stdClass
+        return RecurringPaymentSchedule::fromStdClass($apiResponseData);
     }
 
     /**
@@ -46,7 +53,7 @@ class RecurringPaymentsService extends Service
      *
      * @see https://documentation.paysimple.com/reference/list-recurring-payments
      * @param array $filters
-     * @return array
+     * @return RecurringPaymentSchedule[]
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
     final public function list(array $filters = []): array
@@ -55,7 +62,17 @@ class RecurringPaymentsService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        
+        $apiResponseDataArray = $response['data']; // This is an array of stdClass objects
+        $schedules = [];
+        if (is_array($apiResponseDataArray)) {
+            foreach ($apiResponseDataArray as $scheduleData) {
+                if ($scheduleData instanceof \stdClass) {
+                    $schedules[] = RecurringPaymentSchedule::fromStdClass($scheduleData);
+                }
+            }
+        }
+        return $schedules;
     }
 
     /**
@@ -63,7 +80,7 @@ class RecurringPaymentsService extends Service
      *
      * @see https://documentation.paysimple.com/reference/list-customer-recurring-payments
      * @param int $customer_id
-     * @return array
+     * @return RecurringPaymentSchedule[]
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
     final public function customerList(int $customer_id): array
@@ -72,7 +89,17 @@ class RecurringPaymentsService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        
+        $apiResponseDataArray = $response['data']; // This is an array of stdClass objects
+        $schedules = [];
+        if (is_array($apiResponseDataArray)) {
+            foreach ($apiResponseDataArray as $scheduleData) {
+                if ($scheduleData instanceof \stdClass) {
+                    $schedules[] = RecurringPaymentSchedule::fromStdClass($scheduleData);
+                }
+            }
+        }
+        return $schedules;
     }
 
     /**
@@ -80,7 +107,7 @@ class RecurringPaymentsService extends Service
      *
      * @see https://documentation.paysimple.com/reference/list-payments
      * @param int $schedule_id
-     * @return array
+     * @return Payment[]
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
     final public function paymentList(int $schedule_id): array
@@ -89,24 +116,38 @@ class RecurringPaymentsService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        
+        $apiResponseDataArray = $response['data']; // This is an array of stdClass objects
+        $payments = [];
+        if (is_array($apiResponseDataArray)) {
+            foreach ($apiResponseDataArray as $paymentData) {
+                if ($paymentData instanceof \stdClass) {
+                    $payments[] = Payment::fromStdClass($paymentData);
+                }
+            }
+        }
+        return $payments;
     }
 
     /**
      * Modifies the specified recurring payment.
      *
      * @see https://documentation.paysimple.com/reference/update-recurring-payment
-     * @param array $recurring_payment
-     * @return object
+     * @param RecurringPaymentSchedule $scheduleInput
+     * @return RecurringPaymentSchedule
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function update(array $recurring_payment): object
+    final public function update(RecurringPaymentSchedule $scheduleInput): RecurringPaymentSchedule
     {
-        $response = $this->client->put('recurringpayment', $recurring_payment);
+        $requestData = $scheduleInput->toArray();
+        $response = $this->client->put('recurringpayment', $requestData);
+
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        
+        $apiResponseData = $response['data']; // This should be stdClass
+        return RecurringPaymentSchedule::fromStdClass($apiResponseData);
     }
 
     /**
@@ -114,16 +155,17 @@ class RecurringPaymentsService extends Service
      *
      * @see https://documentation.paysimple.com/reference/suspend
      * @param int $schedule_id
-     * @return object
+     * @return RecurringPaymentSchedule
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function suspend(int $schedule_id): object
+    final public function suspend(int $schedule_id): RecurringPaymentSchedule
     {
         $response = $this->client->put(sprintf('recurringpayment/%s/suspend', $schedule_id), []);
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        $apiResponseData = $response['data']; // This should be stdClass
+        return RecurringPaymentSchedule::fromStdClass($apiResponseData);
     }
 
     /**
@@ -132,17 +174,18 @@ class RecurringPaymentsService extends Service
      * @see https://documentation.paysimple.com/reference/pause
      * @param int $schedule_id
      * @param \DateTime $end_date
-     * @return object
+     * @return RecurringPaymentSchedule
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function pause(int $schedule_id, \DateTime $end_date): object
+    final public function pause(int $schedule_id, \DateTime $end_date): RecurringPaymentSchedule
     {
         $final_end_date = $end_date->format('Y-m-d');
         $response = $this->client->put(sprintf('recurringpayment/%s/pause?enddate=%s', $schedule_id, $final_end_date), []);
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        $apiResponseData = $response['data']; // This should be stdClass
+        return RecurringPaymentSchedule::fromStdClass($apiResponseData);
     }
 
     /**
@@ -150,16 +193,17 @@ class RecurringPaymentsService extends Service
      *
      * @see https://documentation.paysimple.com/reference/resume
      * @param int $schedule_id
-     * @return object
+     * @return RecurringPaymentSchedule
      * @throws GuzzleException|\PaySimple\V4\Core\PaySimpleException
      */
-    final public function resume(int $schedule_id): object
+    final public function resume(int $schedule_id): RecurringPaymentSchedule
     {
         $response = $this->client->put(sprintf('recurringpayment/%s/resume', $schedule_id), []);
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        return $response['data'];
+        $apiResponseData = $response['data']; // This should be stdClass
+        return RecurringPaymentSchedule::fromStdClass($apiResponseData);
     }
 
     /**
@@ -173,7 +217,8 @@ class RecurringPaymentsService extends Service
     final public function delete(int $schedule_id): bool
     {
         $response = $this->client->delete(sprintf('recurringpayment/%s', $schedule_id));
-        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
+        // Ensure consistent error handling, though it was likely already correct from previous refactors.
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) { 
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
         return true;

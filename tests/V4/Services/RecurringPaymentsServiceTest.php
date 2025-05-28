@@ -5,6 +5,8 @@ namespace PaySimple\Tests\V4\Services;
 use PaySimple\V4\Core\ApiClient;
 use PaySimple\V4\Services\RecurringPaymentsService;
 use PaySimple\V4\Core\PaySimpleException;
+use PaySimple\V4\Entities\RecurringPaymentSchedule;
+use PaySimple\V4\Entities\Payment;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
 use Mockery;
 use stdClass;
@@ -30,46 +32,55 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
 
     public function testNewRecurringPaymentSuccessfully()
     {
-        $inputData = [
-            'AccountId' => 123,
-            'PaymentAmount' => 50.00,
-            'StartDate' => '2024-12-01',
-            'ExecutionFrequencyType' => 'Monthly'
-        ];
-        $expectedResponseObject = (object)[
-            'Id' => 1,
-            'ScheduleStatus' => 'Active',
-            'PaymentAmount' => 50.00
-        ];
+        $scheduleInput = new RecurringPaymentSchedule();
+        $scheduleInput->AccountId = 123;
+        $scheduleInput->PaymentAmount = 50.00;
+        $scheduleInput->StartDate = '2024-12-01';
+        $scheduleInput->ExecutionFrequencyType = 'Monthly';
+        // Populate other necessary fields for RecurringPaymentSchedule::toArray for a 'new' request
+
+        $expectedApiRequestArray = $scheduleInput->toArray();
+
+        $apiResponseData = new stdClass();
+        $apiResponseData->Id = 1;
+        $apiResponseData->ScheduleStatus = 'Active';
+        $apiResponseData->PaymentAmount = 50.00;
+        // ... other properties returned by API
 
         $this->apiClientMock->shouldReceive('post')
-            ->with('recurringpayment', $inputData)
+            ->with('recurringpayment', $expectedApiRequestArray)
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $expectedResponseObject,
+                'data' => $apiResponseData,
                 'meta' => (object)['HttpStatus' => 201]
             ]);
 
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
-        $result = $this->recurringPaymentsService->new($inputData);
-        $this->assertEquals($expectedResponseObject, $result);
+        $returnedSchedule = $this->recurringPaymentsService->new($scheduleInput);
+        $this->assertInstanceOf(RecurringPaymentSchedule::class, $returnedSchedule);
+        $this->assertEquals($apiResponseData->Id, $returnedSchedule->Id);
+        $this->assertEquals($apiResponseData->ScheduleStatus, $returnedSchedule->ScheduleStatus);
+        $this->assertEquals($apiResponseData->PaymentAmount, $returnedSchedule->PaymentAmount);
     }
 
     public function testNewRecurringPaymentThrowsExceptionOnError()
     {
-        $inputData = [
-            'AccountId' => 123,
-            'PaymentAmount' => 50.00,
-            'StartDate' => 'invalid-date',
-            'ExecutionFrequencyType' => 'Monthly'
-        ];
+        $scheduleInput = new RecurringPaymentSchedule();
+        $scheduleInput->AccountId = 123;
+        $scheduleInput->PaymentAmount = 50.00;
+        $scheduleInput->StartDate = 'invalid-date';
+        $scheduleInput->ExecutionFrequencyType = 'Monthly';
+        // Populate other necessary fields
+
+        $expectedApiRequestArray = $scheduleInput->toArray();
+
         $errorMessages = ['Invalid StartDate'];
         $errorResponseData = ['errors' => $errorMessages];
 
         $this->apiClientMock->shouldReceive('post')
-            ->with('recurringpayment', $inputData)
+            ->with('recurringpayment', $expectedApiRequestArray)
             ->once()
             ->andReturn([
                 'error' => true,
@@ -82,27 +93,32 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $this->expectException(PaySimpleException::class);
         $this->expectExceptionMessage('Invalid StartDate');
 
-        $this->recurringPaymentsService->new($inputData);
+        $this->recurringPaymentsService->new($scheduleInput);
     }
 
     public function testGetRecurringPaymentSuccessfully()
     {
         $scheduleId = 456;
-        $expectedResponseObject = (object)['Id' => $scheduleId, 'ScheduleStatus' => 'Active'];
+        $apiResponseData = new stdClass();
+        $apiResponseData->Id = $scheduleId;
+        $apiResponseData->ScheduleStatus = 'Active';
+        // ... other properties returned by API
 
         $this->apiClientMock->shouldReceive('get')
             ->with("recurringpayment/{$scheduleId}")
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $expectedResponseObject,
+                'data' => $apiResponseData,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
 
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
-        $result = $this->recurringPaymentsService->get($scheduleId);
-        $this->assertEquals($expectedResponseObject, $result);
+        $returnedSchedule = $this->recurringPaymentsService->get($scheduleId);
+        $this->assertInstanceOf(RecurringPaymentSchedule::class, $returnedSchedule);
+        $this->assertEquals($apiResponseData->Id, $returnedSchedule->Id);
+        $this->assertEquals($apiResponseData->ScheduleStatus, $returnedSchedule->ScheduleStatus);
     }
 
     public function testGetRecurringPaymentThrowsExceptionOnError()
@@ -126,29 +142,44 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $this->expectExceptionMessage('Schedule not found');
 
         $this->recurringPaymentsService->get($scheduleId);
+        // No significant changes needed other than ensuring it uses class properties, which it already does.
     }
 
     public function testListRecurringPaymentsSuccessfully()
     {
         $filters = ['status' => 'Active'];
-        $expectedResponseArray = [
-            (object)['Id' => 1, 'ScheduleStatus' => 'Active'],
-            (object)['Id' => 2, 'ScheduleStatus' => 'Active']
-        ];
+        
+        $schedule1StdClass = new stdClass();
+        $schedule1StdClass->Id = 1;
+        $schedule1StdClass->ScheduleStatus = 'Active';
+
+        $schedule2StdClass = new stdClass();
+        $schedule2StdClass->Id = 2;
+        $schedule2StdClass->ScheduleStatus = 'Active';
+
+        $apiResponseDataArray = [$schedule1StdClass, $schedule2StdClass];
 
         $this->apiClientMock->shouldReceive('get')
             ->with('recurringpayment', $filters)
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $expectedResponseArray,
+                'data' => $apiResponseDataArray,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
 
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
-        $result = $this->recurringPaymentsService->list($filters);
-        $this->assertEquals($expectedResponseArray, $result);
+        $returnedSchedules = $this->recurringPaymentsService->list($filters);
+
+        $this->assertIsArray($returnedSchedules);
+        $this->assertCount(2, $returnedSchedules);
+
+        foreach ($returnedSchedules as $index => $scheduleEntity) {
+            $this->assertInstanceOf(RecurringPaymentSchedule::class, $scheduleEntity);
+            $this->assertEquals($apiResponseDataArray[$index]->Id, $scheduleEntity->Id);
+            $this->assertEquals($apiResponseDataArray[$index]->ScheduleStatus, $scheduleEntity->ScheduleStatus);
+        }
     }
 
     public function testListRecurringPaymentsThrowsExceptionOnError()
@@ -172,29 +203,47 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $this->expectExceptionMessage('Invalid filter');
 
         $this->recurringPaymentsService->list($filters);
+        // No significant changes needed other than ensuring it uses class properties, which it already does.
     }
 
     public function testCustomerListRecurringPaymentsSuccessfully()
     {
         $customerId = 123;
-        $expectedResponseArray = [
-            (object)['Id' => 1, 'CustomerId' => $customerId, 'ScheduleStatus' => 'Active'],
-            (object)['Id' => 2, 'CustomerId' => $customerId, 'ScheduleStatus' => 'Paused']
-        ];
+
+        $schedule1StdClass = new stdClass();
+        $schedule1StdClass->Id = 1;
+        $schedule1StdClass->CustomerId = $customerId;
+        $schedule1StdClass->ScheduleStatus = 'Active';
+
+        $schedule2StdClass = new stdClass();
+        $schedule2StdClass->Id = 2;
+        $schedule2StdClass->CustomerId = $customerId;
+        $schedule2StdClass->ScheduleStatus = 'Paused';
+
+        $apiResponseDataArray = [$schedule1StdClass, $schedule2StdClass];
 
         $this->apiClientMock->shouldReceive('get')
             ->with("customer/{$customerId}/recurringpayment")
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $expectedResponseArray,
+                'data' => $apiResponseDataArray,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
 
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
-        $result = $this->recurringPaymentsService->customerList($customerId);
-        $this->assertEquals($expectedResponseArray, $result);
+        $returnedSchedules = $this->recurringPaymentsService->customerList($customerId);
+
+        $this->assertIsArray($returnedSchedules);
+        $this->assertCount(2, $returnedSchedules);
+
+        foreach ($returnedSchedules as $index => $scheduleEntity) {
+            $this->assertInstanceOf(RecurringPaymentSchedule::class, $scheduleEntity);
+            $this->assertEquals($apiResponseDataArray[$index]->Id, $scheduleEntity->Id);
+            $this->assertEquals($apiResponseDataArray[$index]->ScheduleStatus, $scheduleEntity->ScheduleStatus);
+            $this->assertEquals($apiResponseDataArray[$index]->CustomerId, $scheduleEntity->CustomerId);
+        }
     }
 
     public function testCustomerListRecurringPaymentsThrowsExceptionOnError()
@@ -218,29 +267,47 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $this->expectExceptionMessage('Customer not found');
 
         $this->recurringPaymentsService->customerList($customerId);
+        // No significant changes needed other than ensuring it uses class properties, which it already does.
     }
 
     public function testPaymentListForScheduleSuccessfully()
     {
         $scheduleId = 789;
-        $expectedResponseArray = [
-            (object)['Id' => 101, 'Amount' => 50.00],
-            (object)['Id' => 102, 'Amount' => 50.00]
-        ];
+
+        $payment1StdClass = new stdClass();
+        $payment1StdClass->Id = 101;
+        $payment1StdClass->Amount = 50.00;
+        $payment1StdClass->Status = "Settled";
+
+        $payment2StdClass = new stdClass();
+        $payment2StdClass->Id = 102;
+        $payment2StdClass->Amount = 50.00;
+        $payment2StdClass->Status = "Posted";
+
+        $apiResponseDataArray = [$payment1StdClass, $payment2StdClass];
 
         $this->apiClientMock->shouldReceive('get')
             ->with("recurringpayment/{$scheduleId}/payments")
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $expectedResponseArray,
+                'data' => $apiResponseDataArray,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
 
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
-        $result = $this->recurringPaymentsService->paymentList($scheduleId);
-        $this->assertEquals($expectedResponseArray, $result);
+        $returnedPayments = $this->recurringPaymentsService->paymentList($scheduleId);
+
+        $this->assertIsArray($returnedPayments);
+        $this->assertCount(2, $returnedPayments);
+
+        foreach ($returnedPayments as $index => $paymentEntity) {
+            $this->assertInstanceOf(Payment::class, $paymentEntity);
+            $this->assertEquals($apiResponseDataArray[$index]->Id, $paymentEntity->Id);
+            $this->assertEquals($apiResponseDataArray[$index]->Amount, $paymentEntity->Amount);
+            $this->assertEquals($apiResponseDataArray[$index]->Status, $paymentEntity->Status);
+        }
     }
 
     public function testPaymentListForScheduleThrowsExceptionOnError()
@@ -264,58 +331,65 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $this->expectExceptionMessage('Schedule not found');
 
         $this->recurringPaymentsService->paymentList($scheduleId);
+        // No significant changes needed other than ensuring it uses class properties, which it already does.
     }
 
     public function testUpdateRecurringPaymentSuccessfully()
     {
-        // As per API docs, all original fields for creation must be included for an update.
-        $inputData = [
-            'Id' => 123, // Schedule ID to update
-            'AccountId' => 456,
-            'PaymentAmount' => 55.00, // Updated amount
-            'StartDate' => '2024-12-01',
-            'EndDate' => '2025-12-01',
-            'ExecutionFrequencyType' => 'Monthly',
-            'PaymentType' => 'ACH' // Example, add other required fields
-        ];
-        $expectedResponseObject = (object)[
-            'Id' => 123,
-            'PaymentAmount' => 55.00,
-            'ScheduleStatus' => 'Active'
-        ];
+        $scheduleInput = new RecurringPaymentSchedule();
+        $scheduleInput->Id = 123; // Schedule ID to update
+        $scheduleInput->AccountId = 456;
+        $scheduleInput->PaymentAmount = 55.00; // Updated amount
+        $scheduleInput->StartDate = '2024-12-01';
+        $scheduleInput->EndDate = '2025-12-01';
+        $scheduleInput->ExecutionFrequencyType = 'Monthly';
+        $scheduleInput->PaymentType = 'ACH'; // Example, add other required fields
+
+        $expectedApiRequestArray = $scheduleInput->toArray();
+
+        $apiResponseData = new stdClass();
+        $apiResponseData->Id = 123;
+        $apiResponseData->PaymentAmount = 55.00;
+        $apiResponseData->ScheduleStatus = 'Active';
+        // ... other properties returned by API
 
         $this->apiClientMock->shouldReceive('put')
-            ->with('recurringpayment', $inputData)
+            ->with('recurringpayment', $expectedApiRequestArray)
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $expectedResponseObject,
+                'data' => $apiResponseData,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
 
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
-        $result = $this->recurringPaymentsService->update($inputData);
-        $this->assertEquals($expectedResponseObject, $result);
+        $returnedSchedule = $this->recurringPaymentsService->update($scheduleInput);
+        $this->assertInstanceOf(RecurringPaymentSchedule::class, $returnedSchedule);
+        $this->assertEquals($apiResponseData->Id, $returnedSchedule->Id);
+        $this->assertEquals($apiResponseData->PaymentAmount, $returnedSchedule->PaymentAmount);
+        $this->assertEquals($apiResponseData->ScheduleStatus, $returnedSchedule->ScheduleStatus);
     }
 
     public function testUpdateRecurringPaymentThrowsExceptionOnError()
     {
-        $inputData = [
-            'Id' => 123,
-            'PaymentAmount' => -10.00, // Invalid amount
-            // Include other required fields as per API for an update
-            'AccountId' => 456,
-            'StartDate' => '2024-12-01',
-            'EndDate' => '2025-12-01',
-            'ExecutionFrequencyType' => 'Monthly',
-            'PaymentType' => 'ACH'
-        ];
+        $scheduleInput = new RecurringPaymentSchedule();
+        $scheduleInput->Id = 123;
+        $scheduleInput->PaymentAmount = -10.00; // Invalid amount
+        // Populate other necessary fields for RecurringPaymentSchedule::toArray
+        $scheduleInput->AccountId = 456;
+        $scheduleInput->StartDate = '2024-12-01';
+        $scheduleInput->EndDate = '2025-12-01';
+        $scheduleInput->ExecutionFrequencyType = 'Monthly';
+        $scheduleInput->PaymentType = 'ACH';
+
+        $expectedApiRequestArray = $scheduleInput->toArray();
+
         $errorMessages = ['Invalid PaymentAmount'];
         $errorResponseData = ['errors' => $errorMessages];
 
         $this->apiClientMock->shouldReceive('put')
-            ->with('recurringpayment', $inputData)
+            ->with('recurringpayment', $expectedApiRequestArray)
             ->once()
             ->andReturn([
                 'error' => true,
@@ -328,27 +402,32 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $this->expectException(PaySimpleException::class);
         $this->expectExceptionMessage('Invalid PaymentAmount');
 
-        $this->recurringPaymentsService->update($inputData);
+        $this->recurringPaymentsService->update($scheduleInput);
     }
 
     public function testSuspendScheduleSuccessfully()
     {
         $scheduleId = 123;
-        $expectedResponseObject = (object)['Id' => $scheduleId, 'ScheduleStatus' => 'Suspended'];
+        $apiResponseData = new stdClass();
+        $apiResponseData->Id = $scheduleId;
+        $apiResponseData->ScheduleStatus = 'Suspended';
+        // ... other properties returned by API
 
         $this->apiClientMock->shouldReceive('put')
             ->with("recurringpayment/{$scheduleId}/suspend", [])
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $expectedResponseObject,
+                'data' => $apiResponseData,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
 
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
-        $result = $this->recurringPaymentsService->suspend($scheduleId);
-        $this->assertEquals($expectedResponseObject, $result);
+        $returnedSchedule = $this->recurringPaymentsService->suspend($scheduleId);
+        $this->assertInstanceOf(RecurringPaymentSchedule::class, $returnedSchedule);
+        $this->assertEquals($apiResponseData->Id, $returnedSchedule->Id);
+        $this->assertEquals($apiResponseData->ScheduleStatus, $returnedSchedule->ScheduleStatus);
     }
 
     public function testSuspendScheduleThrowsExceptionOnError()
@@ -372,6 +451,7 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $this->expectExceptionMessage('Schedule already suspended');
 
         $this->recurringPaymentsService->suspend($scheduleId);
+        // No significant changes needed other than ensuring it uses class properties, which it already does.
     }
 
     public function testPauseScheduleSuccessfully()
@@ -379,25 +459,29 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $scheduleId = 123;
         $endDate = new DateTime('2024-12-31');
         $formattedEndDate = $endDate->format('Y-m-d');
-        $expectedResponseObject = (object)[
-            'Id' => $scheduleId,
-            'ScheduleStatus' => 'Suspended', // API docs say "Paused" but example shows "Suspended"
-            'PauseUntilDate' => $formattedEndDate
-        ];
+        
+        $apiResponseData = new stdClass();
+        $apiResponseData->Id = $scheduleId;
+        $apiResponseData->ScheduleStatus = 'Suspended'; // Or "Paused" based on actual API
+        $apiResponseData->PauseUntilDate = $formattedEndDate;
+        // ... other properties returned by API
 
         $this->apiClientMock->shouldReceive('put')
             ->with("recurringpayment/{$scheduleId}/pause?enddate={$formattedEndDate}", [])
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $expectedResponseObject,
+                'data' => $apiResponseData,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
 
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
-        $result = $this->recurringPaymentsService->pause($scheduleId, $endDate);
-        $this->assertEquals($expectedResponseObject, $result);
+        $returnedSchedule = $this->recurringPaymentsService->pause($scheduleId, $endDate);
+        $this->assertInstanceOf(RecurringPaymentSchedule::class, $returnedSchedule);
+        $this->assertEquals($apiResponseData->Id, $returnedSchedule->Id);
+        $this->assertEquals($apiResponseData->ScheduleStatus, $returnedSchedule->ScheduleStatus);
+        $this->assertEquals($apiResponseData->PauseUntilDate, $returnedSchedule->PauseUntilDate);
     }
 
     public function testPauseScheduleThrowsExceptionOnError()
@@ -423,30 +507,34 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $this->expectExceptionMessage('Invalid end date');
 
         $this->recurringPaymentsService->pause($scheduleId, $endDate);
+        // No significant changes needed other than ensuring it uses class properties, which it already does.
     }
 
     public function testResumeScheduleSuccessfully()
     {
         $scheduleId = 123;
-        $expectedResponseObject = (object)[
-            'Id' => $scheduleId,
-            'ScheduleStatus' => 'Active',
-            'PauseUntilDate' => null
-        ];
+        $apiResponseData = new stdClass();
+        $apiResponseData->Id = $scheduleId;
+        $apiResponseData->ScheduleStatus = 'Active';
+        $apiResponseData->PauseUntilDate = null;
+        // ... other properties returned by API
 
         $this->apiClientMock->shouldReceive('put')
             ->with("recurringpayment/{$scheduleId}/resume", [])
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $expectedResponseObject,
+                'data' => $apiResponseData,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
 
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
-        $result = $this->recurringPaymentsService->resume($scheduleId);
-        $this->assertEquals($expectedResponseObject, $result);
+        $returnedSchedule = $this->recurringPaymentsService->resume($scheduleId);
+        $this->assertInstanceOf(RecurringPaymentSchedule::class, $returnedSchedule);
+        $this->assertEquals($apiResponseData->Id, $returnedSchedule->Id);
+        $this->assertEquals($apiResponseData->ScheduleStatus, $returnedSchedule->ScheduleStatus);
+        $this->assertNull($returnedSchedule->PauseUntilDate);
     }
 
     public function testResumeScheduleThrowsExceptionOnError()
@@ -470,6 +558,7 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $this->expectExceptionMessage('Schedule not suspended');
 
         $this->recurringPaymentsService->resume($scheduleId);
+        // No significant changes needed other than ensuring it uses class properties, which it already does.
     }
 
     public function testDeleteRecurringPaymentSuccessfully()
