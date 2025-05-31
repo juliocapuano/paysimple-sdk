@@ -3,6 +3,7 @@
 namespace PaySimple\V4\Entities;
 
 use stdClass;
+use PaySimple\V4\Entities\Address;
 
 class Customer
 {
@@ -21,8 +22,8 @@ class Customer
     public ?string $Fax = null;
     public ?string $Website = null;
     public ?string $Notes = null;
-    public ?object $BillingAddress = null; // stdClass or specific Address entity later
-    public ?object $ShippingAddress = null; // stdClass or specific Address entity later
+    public ?Address $BillingAddress = null;
+    public ?Address $ShippingAddress = null;
     public bool $ShippingSameAsBilling = true; // Default based on API docs for new customer
     public ?string $LastModified = null;
     public ?string $CreatedOn = null;
@@ -48,10 +49,10 @@ class Customer
         $customer->Notes = $data->Notes ?? null;
 
         if (isset($data->BillingAddress) && is_object($data->BillingAddress)) {
-            $customer->BillingAddress = $data->BillingAddress;
+            $customer->BillingAddress = Address::fromStdClass($data->BillingAddress);
         }
         if (isset($data->ShippingAddress) && is_object($data->ShippingAddress)) {
-            $customer->ShippingAddress = $data->ShippingAddress;
+            $customer->ShippingAddress = Address::fromStdClass($data->ShippingAddress);
         }
         // API response for GET has ShippingSameAsBilling as boolean
         if (isset($data->ShippingSameAsBilling)) {
@@ -76,9 +77,10 @@ class Customer
         // and "Only include properties that are set (not null)".
         // For now, I'll include all set properties as per general instruction.
 
-        if ($this->Id !== null) {
-            $array['Id'] = $this->Id; // Typically not for create, but can be for update reference
-        }
+        // Id is typically not part of the request body for create/update customer.
+        // if ($this->Id !== null) {
+        //     $array['Id'] = $this->Id;
+        // }
         if ($this->FirstName !== null) {
             $array['FirstName'] = $this->FirstName;
         }
@@ -128,12 +130,12 @@ class Customer
         $array['ShippingSameAsBilling'] = $this->ShippingSameAsBilling;
 
         if ($this->BillingAddress !== null) {
-            $array['BillingAddress'] = (array)$this->BillingAddress;
+            $array['BillingAddress'] = $this->BillingAddress->toArray();
         }
 
         // Only include ShippingAddress if ShippingSameAsBilling is false and ShippingAddress is set
         if (!$this->ShippingSameAsBilling && $this->ShippingAddress !== null) {
-            $array['ShippingAddress'] = (array)$this->ShippingAddress;
+            $array['ShippingAddress'] = $this->ShippingAddress->toArray();
         } elseif (!$this->ShippingSameAsBilling && $this->ShippingAddress === null) {
             // This case implies ShippingAddress is required but not provided.
             // API will likely error. For toArray, we just reflect the state.

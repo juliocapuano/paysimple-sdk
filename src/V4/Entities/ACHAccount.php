@@ -3,6 +3,7 @@
 namespace PaySimple\V4\Entities;
 
 use stdClass;
+use PaySimple\V4\Entities\Address;
 
 class ACHAccount
 {
@@ -20,7 +21,7 @@ class ACHAccount
     public ?string $RoutingNumber = null;
     public ?string $AccountNumber = null;   // Full number for request; Masked in response
     public ?bool $IsCheckingAccount = null; // Request: true for Checking, false for Savings
-    public ?object $BillingAddress = null;  // stdClass or specific Address entity
+    public ?Address $BillingAddress = null;
 
     public static function fromStdClass(stdClass $data): self
     {
@@ -49,7 +50,7 @@ class ACHAccount
 
 
         if (isset($data->BillingAddress) && is_object($data->BillingAddress)) {
-            $achAccount->BillingAddress = $data->BillingAddress;
+            $achAccount->BillingAddress = Address::fromStdClass($data->BillingAddress);
         }
 
         return $achAccount;
@@ -81,9 +82,9 @@ class ACHAccount
         }
 
         if ($this->BillingAddress !== null) {
-            $array['BillingAddress'] = (array)$this->BillingAddress;
+            $array['BillingAddress'] = $this->BillingAddress->toArray();
         }
-        
+
         if ($this->IsDefault !== null) {
             $array['IsDefault'] = $this->IsDefault;
         }

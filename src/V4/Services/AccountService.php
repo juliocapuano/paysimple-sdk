@@ -27,7 +27,7 @@ class AccountService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseData = $response['data']; // This should be stdClass
         return CreditCard::fromStdClass($apiResponseData);
     }
@@ -66,7 +66,7 @@ class AccountService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseData = $response['data']; // This should be stdClass
         return CreditCard::fromStdClass($apiResponseData);
     }
@@ -108,7 +108,7 @@ class AccountService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseData = $response['data']; // This should be stdClass
         return ACHAccount::fromStdClass($apiResponseData);
     }
@@ -147,7 +147,7 @@ class AccountService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseData = $response['data']; // This should be stdClass
         return ACHAccount::fromStdClass($apiResponseData);
     }

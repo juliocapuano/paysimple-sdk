@@ -25,7 +25,7 @@ class RecurringPaymentsService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseData = $response['data']; // This should be stdClass
         return RecurringPaymentSchedule::fromStdClass($apiResponseData);
     }
@@ -62,7 +62,7 @@ class RecurringPaymentsService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseDataArray = $response['data']; // This is an array of stdClass objects
         $schedules = [];
         if (is_array($apiResponseDataArray)) {
@@ -89,7 +89,7 @@ class RecurringPaymentsService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseDataArray = $response['data']; // This is an array of stdClass objects
         $schedules = [];
         if (is_array($apiResponseDataArray)) {
@@ -116,7 +116,7 @@ class RecurringPaymentsService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseDataArray = $response['data']; // This is an array of stdClass objects
         $payments = [];
         if (is_array($apiResponseDataArray)) {
@@ -145,7 +145,7 @@ class RecurringPaymentsService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseData = $response['data']; // This should be stdClass
         return RecurringPaymentSchedule::fromStdClass($apiResponseData);
     }
@@ -218,7 +218,7 @@ class RecurringPaymentsService extends Service
     {
         $response = $this->client->delete(sprintf('recurringpayment/%s', $schedule_id));
         // Ensure consistent error handling, though it was likely already correct from previous refactors.
-        if ($this->client->hasErrors() || ($response['error'] ?? false)) { 
+        if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
         return true;

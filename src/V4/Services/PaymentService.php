@@ -25,7 +25,7 @@ class PaymentService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseData = $response['data']; // This should be stdClass
         return Payment::fromStdClass($apiResponseData);
     }
@@ -62,7 +62,7 @@ class PaymentService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseDataArray = $response['data']; // This is an array of stdClass objects
         $payments = [];
         if (is_array($apiResponseDataArray)) {

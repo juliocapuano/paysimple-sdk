@@ -3,6 +3,7 @@
 namespace PaySimple\V4\Entities;
 
 use stdClass;
+use PaySimple\V4\Entities\Address;
 
 class CreditCard
 {
@@ -19,7 +20,7 @@ class CreditCard
     // Fields for POST/PUT requests (and also present in GET responses, often masked or partial)
     public ?string $CreditCardNumber = null; // Full number for request if not using Token; Masked in response
     public ?string $ExpirationDate = null;   // MMYY or MM/YYYY. API expects MMYY for requests.
-    public ?object $BillingAddress = null;   // stdClass or specific Address entity
+    public ?Address $BillingAddress = null;
     public ?string $BillingZipCode = null;   // Optional: Can be part of BillingAddress object or standalone for some API calls.
                                             // The docs for "New Credit Card" show it as a top-level field for request.
 
@@ -46,8 +47,12 @@ class CreditCard
         $creditCard->ExpirationDate = $data->ExpirationDate ?? null; // Response format might be MM/YYYY
 
         if (isset($data->BillingAddress) && is_object($data->BillingAddress)) {
-            $creditCard->BillingAddress = $data->BillingAddress;
+            $creditCard->BillingAddress = Address::fromStdClass($data->BillingAddress);
         }
+        // BillingZipCode might be part of BillingAddress from API, or standalone.
+        // If BillingAddress is populated, its ZipCode property would be set by Address::fromStdClass.
+        // If a top-level BillingZipCode is also in response, it's assigned here.
+        // This is fine as CreditCard->BillingZipCode is used by toArray if explicitly set.
         $creditCard->BillingZipCode = $data->BillingZipCode ?? null;
 
         // Token and Cvc are not expected in responses
@@ -86,14 +91,14 @@ class CreditCard
         // BillingAddress is required for new card if not using Token for some gateways
         // Or if updating address details.
         if ($this->BillingAddress !== null) {
-            $array['BillingAddress'] = (array)$this->BillingAddress;
+            $array['BillingAddress'] = $this->BillingAddress->toArray();
         }
 
         // BillingZipCode is specifically mentioned for "New Credit Card" request
         if ($this->BillingZipCode !== null) {
             $array['BillingZipCode'] = $this->BillingZipCode;
         }
-        
+
         // IsDefault can be set during creation or update
         if ($this->IsDefault !== null) {
             $array['IsDefault'] = $this->IsDefault;

@@ -5,6 +5,7 @@ namespace PaySimple\Tests\V4\Services;
 use PaySimple\V4\Core\ApiClient;
 use PaySimple\V4\Services\MerchantService;
 use PaySimple\V4\Core\PaySimpleException;
+use PaySimple\V4\Entities\MerchantPaymentOptions;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
 use Mockery;
 use stdClass;
@@ -29,25 +30,28 @@ class MerchantServiceTest extends MockeryTestCase
 
     public function testPaymentOptionsSuccessfully()
     {
-        $expectedResponseObject = (object)[
-            'AcceptsCreditCard' => true,
-            'AcceptsAch' => true,
-            'CreditCardIssuers' => 'Visa,Mastercard,Amex,Discover'
-        ];
+        $apiResponseData = new stdClass();
+        $apiResponseData->AcceptsCreditCard = true;
+        $apiResponseData->AcceptsAch = true;
+        $apiResponseData->CreditCardIssuers = 'Visa,Mastercard,Amex,Discover';
 
         $this->apiClientMock->shouldReceive('get')
             ->with('merchant/paymentoptions')
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $expectedResponseObject,
+                'data' => $apiResponseData,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
 
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
         $result = $this->merchantService->paymentOptions();
-        $this->assertEquals($expectedResponseObject, $result);
+
+        $this->assertInstanceOf(MerchantPaymentOptions::class, $result);
+        $this->assertSame((bool)$apiResponseData->AcceptsCreditCard, $result->AcceptsCreditCard);
+        $this->assertSame((bool)$apiResponseData->AcceptsAch, $result->AcceptsAch);
+        $this->assertEquals($apiResponseData->CreditCardIssuers, $result->CreditCardIssuers);
     }
 
     public function testPaymentOptionsThrowsExceptionOnError()
@@ -70,5 +74,6 @@ class MerchantServiceTest extends MockeryTestCase
         $this->expectExceptionMessage('Service unavailable');
 
         $this->merchantService->paymentOptions();
+        // No significant changes needed other than ensuring it uses class properties, which it already does.
     }
 }

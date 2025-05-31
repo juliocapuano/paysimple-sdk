@@ -29,7 +29,7 @@ class CustomerService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseData = $response['data']; // This should be stdClass
         return Customer::fromStdClass($apiResponseData);
     }
@@ -66,7 +66,7 @@ class CustomerService extends Service
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
-        
+
         $apiResponseDataArray = $response['data']; // This is an array of stdClass objects
         $customers = [];
         if (is_array($apiResponseDataArray)) {
@@ -191,7 +191,7 @@ class CustomerService extends Service
         // We'll assume the toArray() method of Customer entity handles this correctly for now.
         // If 'Id' should NOT be in the body, Customer::toArray() should be adjusted,
         // or we unset($requestData['Id']) here if it's always present and not desired.
-        
+
         $response = $this->client->put('customer', $requestData);
         if ($this->client->hasErrors() || ($response['error'] ?? false)) {
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);

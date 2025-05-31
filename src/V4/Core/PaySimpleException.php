@@ -28,7 +28,7 @@ class PaySimpleException extends \Exception
     {
         $errorMessages = $response_data['errors'] ?? ['Unknown API error.'];
         $message = implode('; ', $errorMessages);
-        
+
         $httpStatusCode = isset($response_meta->HttpStatus) ? (int)$response_meta->HttpStatus : 0;
 
         // Constructor: __construct($message = "", array $errors = [], int $code = 0, \Throwable $previous = null)

@@ -130,7 +130,7 @@ class Payment
         if ($this->FailureReceiptOptions !== null) {
             $array['FailureReceiptOptions'] = (array)$this->FailureReceiptOptions;
         }
-        
+
         // Read-only fields like Id, Status, ProviderAuthCode, TraceNumber, FailureData,
         // CustomerFirstName, CustomerLastName, RecurringScheduleId, PaymentType, PaymentDate,
         // ReturnDate, EstimatedSettleDate, ActualSettledDate, CanVoidUntil,

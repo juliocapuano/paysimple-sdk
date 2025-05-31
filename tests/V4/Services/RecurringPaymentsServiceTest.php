@@ -148,7 +148,7 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
     public function testListRecurringPaymentsSuccessfully()
     {
         $filters = ['status' => 'Active'];
-        
+
         $schedule1StdClass = new stdClass();
         $schedule1StdClass->Id = 1;
         $schedule1StdClass->ScheduleStatus = 'Active';
@@ -459,7 +459,7 @@ class RecurringPaymentsServiceTest extends MockeryTestCase
         $scheduleId = 123;
         $endDate = new DateTime('2024-12-31');
         $formattedEndDate = $endDate->format('Y-m-d');
-        
+
         $apiResponseData = new stdClass();
         $apiResponseData->Id = $scheduleId;
         $apiResponseData->ScheduleStatus = 'Suspended'; // Or "Paused" based on actual API

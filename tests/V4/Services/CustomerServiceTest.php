@@ -5,6 +5,7 @@ namespace PaySimple\Tests\V4\Services;
 use PaySimple\V4\Core\ApiClient;
 use PaySimple\V4\Services\CustomerService;
 use PaySimple\V4\Entities\Customer;
+use PaySimple\V4\Entities\Address;
 use PaySimple\V4\Core\PaySimpleException;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
 use Mockery;
@@ -29,7 +30,24 @@ class CustomerServiceTest extends MockeryTestCase
         // $expectedData = ['Id' => $customerId, 'FirstName' => 'John', 'LastName' => 'Doe']; // Duplicate, removed
 
         // Expected raw data from API mock
-        $expectedRawData = (object) ['Id' => $customerId, 'FirstName' => 'John', 'LastName' => 'Doe'];
+        $expectedRawData = (object) [
+            'Id' => $customerId,
+            'FirstName' => 'John',
+            'LastName' => 'Doe',
+            'BillingAddress' => (object)[
+                'StreetAddress1' => '123 Main St',
+                'City' => 'Anytown',
+                'StateCode' => 'CO', // Or StateProvince
+                'ZipCode' => '80000'  // Or PostalCode
+            ],
+            'ShippingAddress' => (object)[
+                'StreetAddress1' => '456 Ship Ave',
+                'City' => 'Shiptown',
+                'StateCode' => 'TX',
+                'ZipCode' => '70000'
+            ],
+            'ShippingSameAsBilling' => false
+        ];
 
         // Configure the mock ApiClient
         $this->apiClientMock->shouldReceive('get')
@@ -40,7 +58,7 @@ class CustomerServiceTest extends MockeryTestCase
                 'data' => $expectedRawData,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
-        
+
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
         // Call the method to be tested
@@ -51,6 +69,17 @@ class CustomerServiceTest extends MockeryTestCase
         $this->assertEquals($expectedRawData->Id, $customer->Id);
         $this->assertEquals($expectedRawData->FirstName, $customer->FirstName);
         $this->assertEquals($expectedRawData->LastName, $customer->LastName);
+
+        $this->assertInstanceOf(Address::class, $customer->BillingAddress);
+        $this->assertEquals($expectedRawData->BillingAddress->StreetAddress1, $customer->BillingAddress->StreetAddress1);
+        $this->assertEquals($expectedRawData->BillingAddress->City, $customer->BillingAddress->City);
+        $this->assertEquals($expectedRawData->BillingAddress->StateCode, $customer->BillingAddress->StateCode);
+        $this->assertEquals($expectedRawData->BillingAddress->ZipCode, $customer->BillingAddress->ZipCode);
+
+        $this->assertInstanceOf(Address::class, $customer->ShippingAddress);
+        $this->assertEquals($expectedRawData->ShippingAddress->StreetAddress1, $customer->ShippingAddress->StreetAddress1);
+        $this->assertEquals(false, $customer->ShippingSameAsBilling);
+
     }
 
     public function testGetCustomerThrowsExceptionOnError()
@@ -92,22 +121,30 @@ class CustomerServiceTest extends MockeryTestCase
         $customerInput->FirstName = "Test";
         $customerInput->LastName = "User";
         $customerInput->Email = "test.user@example.com";
-        // Add other necessary properties for a new customer based on Customer::toArray() logic
-        $customerInput->ShippingSameAsBilling = true; 
-        $customerInput->BillingAddress = (object) ['StreetAddress1' => '123 Main St', 'City' => 'Anytown', 'StateCode' => 'CO', 'ZipCode' => '80000'];
+        $customerInput->ShippingSameAsBilling = true;
 
+        $billingAddressInput = new Address();
+        $billingAddressInput->StreetAddress1 = '123 Main St';
+        $billingAddressInput->City = 'Anytown';
+        $billingAddressInput->StateCode = 'CO';
+        $billingAddressInput->ZipCode = '80000';
+        $customerInput->BillingAddress = $billingAddressInput;
 
-        $expectedApiRequestArray = $customerInput->toArray(); // This is an array
+        $expectedApiRequestArray = $customerInput->toArray();
 
         $apiResponseData = new stdClass();
         $apiResponseData->Id = 12345;
         $apiResponseData->FirstName = "Test";
         $apiResponseData->LastName = "User";
         $apiResponseData->Email = "test.user@example.com";
-        // ... other properties returned by API for a new customer
         $apiResponseData->ShippingSameAsBilling = true;
-        $apiResponseData->BillingAddress = (object) ['StreetAddress1' => '123 Main St', 'City' => 'Anytown', 'StateCode' => 'CO', 'ZipCode' => '80000'];
-
+        $apiResponseData->BillingAddress = (object) [
+            'StreetAddress1' => '123 Main St',
+            'City' => 'Anytown',
+            'StateCode' => 'CO',
+            'ZipCode' => '80000'
+        ];
+        // No ShippingAddress in response if ShippingSameAsBilling is true
 
         $this->apiClientMock->shouldReceive('post')
             ->with('customer', $expectedApiRequestArray)
@@ -117,7 +154,7 @@ class CustomerServiceTest extends MockeryTestCase
                 'data' => $apiResponseData,
                 'meta' => (object)['HttpStatus' => 201]
             ]);
-        
+
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
         $returnedCustomer = $this->customerService->new($customerInput);
@@ -127,7 +164,10 @@ class CustomerServiceTest extends MockeryTestCase
         $this->assertEquals($apiResponseData->FirstName, $returnedCustomer->FirstName);
         $this->assertEquals($apiResponseData->LastName, $returnedCustomer->LastName);
         $this->assertEquals($apiResponseData->Email, $returnedCustomer->Email);
-        // Assert other relevant properties
+        $this->assertTrue($returnedCustomer->ShippingSameAsBilling);
+        $this->assertInstanceOf(Address::class, $returnedCustomer->BillingAddress);
+        $this->assertEquals($apiResponseData->BillingAddress->StreetAddress1, $returnedCustomer->BillingAddress->StreetAddress1);
+        $this->assertNull($returnedCustomer->ShippingAddress); // Because ShippingSameAsBilling is true
     }
 
     public function testNewCustomerThrowsExceptionOnError()
@@ -135,9 +175,14 @@ class CustomerServiceTest extends MockeryTestCase
         $customerInput = new Customer();
         $customerInput->FirstName = "Error";
         $customerInput->LastName = "Test";
-        // Other properties as needed to form a valid request array
-        $customerInput->ShippingSameAsBilling = true; 
-        $customerInput->BillingAddress = (object) ['StreetAddress1' => '123 Main St', 'City' => 'Anytown', 'StateCode' => 'CO', 'ZipCode' => '80000'];
+        // Ensure BillingAddress is an Address entity for toArray() to work correctly
+        $billingAddressInput = new Address();
+        $billingAddressInput->StreetAddress1 = '123 Main St';
+        $billingAddressInput->City = 'Anytown';
+        $billingAddressInput->StateCode = 'CO';
+        $billingAddressInput->ZipCode = '80000';
+        $customerInput->BillingAddress = $billingAddressInput;
+        $customerInput->ShippingSameAsBilling = true;
 
         $expectedApiRequestArray = $customerInput->toArray();
 
@@ -152,7 +197,7 @@ class CustomerServiceTest extends MockeryTestCase
                 'data' => $errorResponseData,
                 'meta' => (object)['HttpStatus' => 400]
             ]);
-        
+
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(true);
 
         $this->expectException(PaySimpleException::class);
@@ -168,32 +213,41 @@ class CustomerServiceTest extends MockeryTestCase
         $customerInput->FirstName = "Updated Test";
         $customerInput->LastName = "Updated User";
         $customerInput->Email = "updated.user@example.com";
-        // Add other necessary properties for an update based on Customer::toArray() logic
-        $customerInput->ShippingSameAsBilling = true; 
-        $customerInput->BillingAddress = (object) ['StreetAddress1' => '456 New St', 'City' => 'Newtown', 'StateCode' => 'NY', 'ZipCode' => '10001'];
+        $customerInput->ShippingSameAsBilling = true;
 
-        $expectedApiRequestArray = $customerInput->toArray(); // This is an array
+        $billingAddressInput = new Address();
+        $billingAddressInput->StreetAddress1 = '456 New St';
+        $billingAddressInput->City = 'Newtown';
+        $billingAddressInput->StateCode = 'NY';
+        $billingAddressInput->ZipCode = '10001';
+        $customerInput->BillingAddress = $billingAddressInput;
+        // No ShippingAddress needed as ShippingSameAsBilling is true
 
-        // API response might be the same as the input, or just a success indicator
-        // For this test, let's assume it returns the updated customer object
+        $expectedApiRequestArray = $customerInput->toArray();
+
         $apiResponseData = new stdClass();
         $apiResponseData->Id = 12345;
         $apiResponseData->FirstName = "Updated Test";
         $apiResponseData->LastName = "Updated User";
         $apiResponseData->Email = "updated.user@example.com";
         $apiResponseData->ShippingSameAsBilling = true;
-        $apiResponseData->BillingAddress = (object) ['StreetAddress1' => '456 New St', 'City' => 'Newtown', 'StateCode' => 'NY', 'ZipCode' => '10001'];
+        $apiResponseData->BillingAddress = (object) [
+            'StreetAddress1' => '456 New St',
+            'City' => 'Newtown',
+            'StateCode' => 'NY', // Or StateProvince
+            'ZipCode' => '10001'  // Or PostalCode
+        ];
         // ... other properties returned by API for an updated customer
 
         $this->apiClientMock->shouldReceive('put')
-            ->with('customer', $expectedApiRequestArray) // Endpoint for update might be 'customer/ID' or just 'customer' with ID in body
+            ->with('customer', $expectedApiRequestArray)
             ->once()
             ->andReturn([
                 'error' => false,
                 'data' => $apiResponseData,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
-        
+
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
         $returnedCustomer = $this->customerService->update($customerInput);
@@ -202,7 +256,9 @@ class CustomerServiceTest extends MockeryTestCase
         $this->assertEquals($apiResponseData->Id, $returnedCustomer->Id);
         $this->assertEquals($apiResponseData->FirstName, $returnedCustomer->FirstName);
         $this->assertEquals($apiResponseData->Email, $returnedCustomer->Email);
-        // Assert other relevant properties
+        $this->assertInstanceOf(Address::class, $returnedCustomer->BillingAddress);
+        $this->assertEquals($apiResponseData->BillingAddress->StreetAddress1, $returnedCustomer->BillingAddress->StreetAddress1);
+        $this->assertNull($returnedCustomer->ShippingAddress);
     }
 
     public function testUpdateCustomerThrowsExceptionOnError()
@@ -210,10 +266,14 @@ class CustomerServiceTest extends MockeryTestCase
         $customerInput = new Customer();
         $customerInput->Id = 12345; // ID of the customer to update
         $customerInput->FirstName = "Error Update";
-        // Other properties as needed for a valid request for update
-        $customerInput->ShippingSameAsBilling = true; 
-        $customerInput->BillingAddress = (object) ['StreetAddress1' => '456 New St', 'City' => 'Newtown', 'StateCode' => 'NY', 'ZipCode' => '10001'];
-
+        // Ensure BillingAddress is an Address entity for toArray() to work correctly
+        $billingAddressInput = new Address();
+        $billingAddressInput->StreetAddress1 = '456 New St';
+        $billingAddressInput->City = 'Newtown';
+        $billingAddressInput->StateCode = 'NY';
+        $billingAddressInput->ZipCode = '10001';
+        $customerInput->BillingAddress = $billingAddressInput;
+        $customerInput->ShippingSameAsBilling = true;
 
         $expectedApiRequestArray = $customerInput->toArray();
 
@@ -228,7 +288,7 @@ class CustomerServiceTest extends MockeryTestCase
                 'data' => $errorResponseData,
                 'meta' => (object)['HttpStatus' => 400]
             ]);
-        
+
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(true);
 
         $this->expectException(PaySimpleException::class);
@@ -246,12 +306,34 @@ class CustomerServiceTest extends MockeryTestCase
         $customer1StdClass->FirstName = "List";
         $customer1StdClass->LastName = "UserOne";
         $customer1StdClass->Email = "test@example.com";
+        $customer1StdClass->BillingAddress = (object)[
+            'StreetAddress1' => '789 List St',
+            'City' => 'Listville',
+            'StateCode' => 'LS',
+            'ZipCode' => '50000'
+        ];
+        $customer1StdClass->ShippingSameAsBilling = true;
+
 
         $customer2StdClass = new stdClass();
         $customer2StdClass->Id = 2;
         $customer2StdClass->FirstName = "List";
         $customer2StdClass->LastName = "UserTwo";
         $customer2StdClass->Email = "test@example.com";
+        $customer2StdClass->BillingAddress = (object)[
+            'StreetAddress1' => '101 Array Ave',
+            'City' => 'Arraysburg',
+            'StateCode' => 'AR',
+            'ZipCode' => '60000'
+        ];
+        $customer2StdClass->ShippingAddress = (object)[
+            'StreetAddress1' => '102 Ship Rd',
+            'City' => 'Shipton',
+            'StateCode' => 'SH',
+            'ZipCode' => '60001'
+        ];
+        $customer2StdClass->ShippingSameAsBilling = false;
+
 
         $apiResponseDataArray = [$customer1StdClass, $customer2StdClass];
 
@@ -263,7 +345,7 @@ class CustomerServiceTest extends MockeryTestCase
                 'data' => $apiResponseDataArray,
                 'meta' => (object)['HttpStatus' => 200]
             ]);
-        
+
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
 
         $returnedCustomers = $this->customerService->list($filterParams);
@@ -273,10 +355,21 @@ class CustomerServiceTest extends MockeryTestCase
 
         foreach ($returnedCustomers as $index => $customerEntity) {
             $this->assertInstanceOf(Customer::class, $customerEntity);
-            $this->assertEquals($apiResponseDataArray[$index]->Id, $customerEntity->Id);
-            $this->assertEquals($apiResponseDataArray[$index]->FirstName, $customerEntity->FirstName);
-            $this->assertEquals($apiResponseDataArray[$index]->LastName, $customerEntity->LastName);
-            $this->assertEquals($apiResponseDataArray[$index]->Email, $customerEntity->Email);
+            $expectedStdClass = $apiResponseDataArray[$index];
+            $this->assertEquals($expectedStdClass->Id, $customerEntity->Id);
+            $this->assertEquals($expectedStdClass->FirstName, $customerEntity->FirstName);
+            $this->assertEquals($expectedStdClass->LastName, $customerEntity->LastName);
+            $this->assertEquals($expectedStdClass->Email, $customerEntity->Email);
+
+            if (isset($expectedStdClass->BillingAddress)) {
+                $this->assertInstanceOf(Address::class, $customerEntity->BillingAddress);
+                $this->assertEquals($expectedStdClass->BillingAddress->StreetAddress1, $customerEntity->BillingAddress->StreetAddress1);
+            }
+             if (isset($expectedStdClass->ShippingAddress)) {
+                $this->assertInstanceOf(Address::class, $customerEntity->ShippingAddress);
+                $this->assertEquals($expectedStdClass->ShippingAddress->StreetAddress1, $customerEntity->ShippingAddress->StreetAddress1);
+            }
+            $this->assertEquals($expectedStdClass->ShippingSameAsBilling, $customerEntity->ShippingSameAsBilling);
         }
     }
 
@@ -294,13 +387,14 @@ class CustomerServiceTest extends MockeryTestCase
                 'data' => $errorResponseData,
                 'meta' => (object)['HttpStatus' => 400]
             ]);
-        
+
         $this->apiClientMock->shouldReceive('hasErrors')->andReturn(true);
 
         $this->expectException(PaySimpleException::class);
         $this->expectExceptionMessage('Invalid filter parameter');
 
         $this->customerService->list($filterParams);
+        // No significant changes needed other than ensuring it uses class properties, which it already does.
     }
 
     protected function tearDown(): void

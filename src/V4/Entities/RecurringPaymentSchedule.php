@@ -146,7 +146,7 @@ class RecurringPaymentSchedule
         if (!empty($failureOptions)) {
             $array['FailureReceiptOptions'] = $failureOptions;
         }
-        
+
         // Id is required for Update requests, not for New.
         // This method is generic for request bodies.
         // If this entity were strictly for "New", Id would be omitted.

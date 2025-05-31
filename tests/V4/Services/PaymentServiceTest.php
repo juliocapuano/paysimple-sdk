@@ -145,7 +145,7 @@ class PaymentServiceTest extends MockeryTestCase
     public function testListPaymentsSuccessfully()
     {
         $filterParams = ['startdate' => '2024-01-01'];
-        
+
         $payment1StdClass = new stdClass();
         $payment1StdClass->Id = 1;
         $payment1StdClass->Status = 'Settled';
