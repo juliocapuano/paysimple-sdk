@@ -47,7 +47,7 @@ class CreditCard
         $creditCard->ExpirationDate = $data->ExpirationDate ?? null; // Response format might be MM/YYYY
 
         if (isset($data->BillingAddress) && is_object($data->BillingAddress)) {
-            $creditCard->BillingAddress = Address::fromStdClass($data->BillingAddress);
+            $creditCard->BillingAddress = new Address((array)$data->BillingAddress);
         }
         // BillingZipCode might be part of BillingAddress from API, or standalone.
         // If BillingAddress is populated, its ZipCode property would be set by Address::fromStdClass.

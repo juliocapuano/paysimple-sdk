@@ -13,27 +13,26 @@ class Address
     public ?string $ZipCode = null;      // Internal representation
     public ?string $Country = null;
 
-    public static function fromStdClass(stdClass $data): self
+    public function __construct(?array $data = null)
     {
-        $address = new self();
+        if ($data !== null) {
+            $this->StreetAddress1 = $data['StreetAddress1'] ?? $data['streetaddress1'] ?? null;
+            $this->StreetAddress2 = $data['StreetAddress2'] ?? $data['streetaddress2'] ?? null;
+            $this->City = $data['City'] ?? $data['city'] ?? null;
 
-        $address->StreetAddress1 = $data->StreetAddress1 ?? null;
-        $address->StreetAddress2 = $data->StreetAddress2 ?? null;
-        $address->City = $data->City ?? null;
+            // Handle mapping from API keys like 'StateProvince' to 'StateCode'
+            // Also check for direct internal names if data comes from an internal source (e.g. toArray then new Address)
+            $this->StateCode = $data['StateCode'] ?? $data['statecode']
+                ?? $data['StateProvince'] ?? $data['stateprovince']
+                ?? null;
 
-        // Handle variations in API field names for state and zip
-        $address->StateCode = $data->StateCode // Prefer StateCode directly
-            ?? $data->StateAbbreviation // Fallback
-            ?? $data->StateProvince // Common API name
-            ?? null;
+            // Handle mapping from API keys like 'PostalCode' to 'ZipCode'
+            $this->ZipCode = $data['ZipCode'] ?? $data['zipcode']
+                ?? $data['PostalCode'] ?? $data['postalcode']
+                ?? null;
 
-        $address->ZipCode = $data->ZipCode // Prefer ZipCode directly
-            ?? $data->PostalCode // Common API name
-            ?? null;
-
-        $address->Country = $data->Country ?? null;
-
-        return $address;
+            $this->Country = $data['Country'] ?? $data['country'] ?? null;
+        }
     }
 
     public function toArray(): array

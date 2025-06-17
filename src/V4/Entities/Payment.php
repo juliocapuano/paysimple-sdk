@@ -3,6 +3,8 @@
 namespace PaySimple\V4\Entities;
 
 use stdClass;
+use PaySimple\V4\Entities\PaymentFailureData;
+use PaySimple\V4\Entities\ReceiptOptions;
 
 class Payment
 {
@@ -11,7 +13,7 @@ class Payment
     public ?string $Status = null;
     public ?string $ProviderAuthCode = null;
     public ?string $TraceNumber = null;
-    public ?object $FailureData = null; // Can be stdClass { Code, Message }
+    public ?PaymentFailureData $FailureData = null;
     public ?string $CustomerFirstName = null;
     public ?string $CustomerLastName = null;
     public ?int $RecurringScheduleId = null;
@@ -38,8 +40,8 @@ class Payment
     public ?int $ReferenceId = null; // Can be request and response
 
     // Request only fields
-    public ?object $SuccessReceiptOptions = null; // stdClass { SendToCustomer, SendToOtherAddresses[] }
-    public ?object $FailureReceiptOptions = null; // stdClass { SendToCustomer, SendToOtherAddresses[] }
+    public ?ReceiptOptions $SuccessReceiptOptions = null;
+    public ?ReceiptOptions $FailureReceiptOptions = null;
     public ?string $CVV = null; // For request only, not stored
 
     public static function fromStdClass(stdClass $data): self
@@ -51,7 +53,7 @@ class Payment
         $payment->ProviderAuthCode = $data->ProviderAuthCode ?? null;
         $payment->TraceNumber = $data->TraceNumber ?? null;
         if (isset($data->FailureData) && is_object($data->FailureData)) {
-            $payment->FailureData = $data->FailureData;
+            $payment->FailureData = PaymentFailureData::fromStdClass($data->FailureData);
         }
         $payment->CustomerId = $data->CustomerId ?? null;
         $payment->CustomerFirstName = $data->CustomerFirstName ?? null;
@@ -125,10 +127,10 @@ class Payment
             $array['Description'] = $this->Description;
         }
         if ($this->SuccessReceiptOptions !== null) {
-            $array['SuccessReceiptOptions'] = (array)$this->SuccessReceiptOptions;
+            $array['SuccessReceiptOptions'] = $this->SuccessReceiptOptions->toArray();
         }
         if ($this->FailureReceiptOptions !== null) {
-            $array['FailureReceiptOptions'] = (array)$this->FailureReceiptOptions;
+            $array['FailureReceiptOptions'] = $this->FailureReceiptOptions->toArray();
         }
 
         // Read-only fields like Id, Status, ProviderAuthCode, TraceNumber, FailureData,

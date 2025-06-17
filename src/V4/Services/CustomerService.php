@@ -31,7 +31,7 @@ class CustomerService extends Service
         }
 
         $apiResponseData = $response['data']; // This should be stdClass
-        return Customer::fromStdClass($apiResponseData);
+        return new Customer((array)$apiResponseData);
     }
 
     /**
@@ -49,7 +49,7 @@ class CustomerService extends Service
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
         $apiResponseData = $response['data']; // This should be stdClass
-        return Customer::fromStdClass($apiResponseData);
+        return new Customer((array)$apiResponseData);
     }
 
     /**
@@ -70,12 +70,10 @@ class CustomerService extends Service
         $apiResponseDataArray = $response['data']; // This is an array of stdClass objects
         $customers = [];
         if (is_array($apiResponseDataArray)) {
-            foreach ($apiResponseDataArray as $customerData) {
-                if ($customerData instanceof \stdClass) {
-                    $customers[] = Customer::fromStdClass($customerData);
+            foreach ($apiResponseDataArray as $customerDataStdClass) {
+                if ($customerDataStdClass instanceof \stdClass) {
+                    $customers[] = new Customer((array)$customerDataStdClass);
                 }
-                // Optionally, handle cases where $customerData is not an stdClass,
-                // though the API client should consistently return this structure.
             }
         }
         return $customers;
@@ -197,7 +195,7 @@ class CustomerService extends Service
             throw PaySimpleException::fromApiResponse($response['data'] ?? [], $response['meta'] ?? (object)[]);
         }
         $apiResponseData = $response['data']; // This should be stdClass
-        return Customer::fromStdClass($apiResponseData);
+        return new Customer((array)$apiResponseData);
     }
 
     /**

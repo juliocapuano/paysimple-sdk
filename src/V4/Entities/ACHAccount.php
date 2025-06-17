@@ -50,7 +50,7 @@ class ACHAccount
 
 
         if (isset($data->BillingAddress) && is_object($data->BillingAddress)) {
-            $achAccount->BillingAddress = Address::fromStdClass($data->BillingAddress);
+            $achAccount->BillingAddress = new Address((array)$data->BillingAddress);
         }
 
         return $achAccount;

@@ -6,6 +6,8 @@ use PaySimple\V4\Core\ApiClient;
 use PaySimple\V4\Services\PaymentService;
 use PaySimple\V4\Core\PaySimpleException;
 use PaySimple\V4\Entities\Payment;
+use PaySimple\V4\Entities\PaymentFailureData;
+use PaySimple\V4\Entities\ReceiptOptions;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
 use Mockery;
 use stdClass;
@@ -33,8 +35,12 @@ class PaymentServiceTest extends MockeryTestCase
         $paymentInput = new Payment();
         $paymentInput->AccountId = 123;
         $paymentInput->Amount = 10.00;
-        // Populate other necessary fields for Payment::toArray for a 'new' request
-        // e.g., $paymentInput->PaymentSubType = 'PPD'; for ACH
+        $paymentInput->PaymentSubType = 'PPD'; // Example for ACH
+
+        $successReceiptOptionsInput = new ReceiptOptions();
+        $successReceiptOptionsInput->SendToCustomer = true;
+        $successReceiptOptionsInput->SendToOtherAddresses = ['test@example.com'];
+        $paymentInput->SuccessReceiptOptions = $successReceiptOptionsInput;
 
         $expectedApiRequestArray = $paymentInput->toArray();
 
@@ -42,6 +48,9 @@ class PaymentServiceTest extends MockeryTestCase
         $apiResponseData->Id = 1;
         $apiResponseData->Status = 'Posted';
         $apiResponseData->Amount = 10.00;
+        $apiResponseData->PaymentSubType = 'PPD';
+        // API response for a 'new' payment typically doesn't include FailureData unless it failed synchronously.
+        // API response also doesn't typically include ReceiptOptions.
         // ... other properties returned by API
 
         $this->apiClientMock->shouldReceive('post')
@@ -60,6 +69,11 @@ class PaymentServiceTest extends MockeryTestCase
         $this->assertEquals($apiResponseData->Id, $returnedPayment->Id);
         $this->assertEquals($apiResponseData->Status, $returnedPayment->Status);
         $this->assertEquals($apiResponseData->Amount, $returnedPayment->Amount);
+        $this->assertEquals($apiResponseData->PaymentSubType, $returnedPayment->PaymentSubType);
+        $this->assertNull($returnedPayment->FailureData); // Expect no failure data on success
+        // ReceiptOptions are not part of the response for 'new', so they should be null on $returnedPayment
+        $this->assertNull($returnedPayment->SuccessReceiptOptions);
+        $this->assertNull($returnedPayment->FailureReceiptOptions);
     }
 
     public function testNewPaymentThrowsExceptionOnError()
@@ -67,7 +81,11 @@ class PaymentServiceTest extends MockeryTestCase
         $paymentInput = new Payment();
         $paymentInput->AccountId = 999;
         $paymentInput->Amount = 5.00;
-        // Populate other necessary fields
+        // If testing serialization of ReceiptOptions even in an error case:
+        $failureReceiptOptionsInput = new ReceiptOptions();
+        $failureReceiptOptionsInput->SendToCustomer = false;
+        $paymentInput->FailureReceiptOptions = $failureReceiptOptionsInput;
+
 
         $expectedApiRequestArray = $paymentInput->toArray();
 
@@ -98,6 +116,7 @@ class PaymentServiceTest extends MockeryTestCase
         $apiResponseData->Id = $paymentId;
         $apiResponseData->Status = 'Settled';
         $apiResponseData->Amount = 20.00;
+        $apiResponseData->FailureData = null; // Explicitly null for success case
         // ... other properties returned by API
 
         $this->apiClientMock->shouldReceive('get')
@@ -116,6 +135,43 @@ class PaymentServiceTest extends MockeryTestCase
         $this->assertEquals($apiResponseData->Id, $returnedPayment->Id);
         $this->assertEquals($apiResponseData->Status, $returnedPayment->Status);
         $this->assertEquals($apiResponseData->Amount, $returnedPayment->Amount);
+        $this->assertNull($returnedPayment->FailureData);
+    }
+
+    public function testGetPaymentSuccessfullyWithFailureData()
+    {
+        $paymentId = 124;
+        $apiResponseData = new stdClass();
+        $apiResponseData->Id = $paymentId;
+        $apiResponseData->Status = 'Failed';
+        $apiResponseData->Amount = 25.00;
+        $apiResponseData->FailureData = (object)[
+            'Code' => 'DF001',
+            'Description' => 'Insufficient Funds',
+            'MerchantActionText' => 'Contact customer for new payment method.',
+            'IsDecline' => true
+        ];
+        // ... other properties returned by API
+
+        $this->apiClientMock->shouldReceive('get')
+            ->with("payment/{$paymentId}")
+            ->once()
+            ->andReturn([
+                'error' => false, // API call itself is successful, but payment failed
+                'data' => $apiResponseData,
+                'meta' => (object)['HttpStatus' => 200]
+            ]);
+
+        $this->apiClientMock->shouldReceive('hasErrors')->andReturn(false);
+
+        $returnedPayment = $this->paymentService->get($paymentId);
+        $this->assertInstanceOf(Payment::class, $returnedPayment);
+        $this->assertEquals($apiResponseData->Id, $returnedPayment->Id);
+        $this->assertEquals($apiResponseData->Status, $returnedPayment->Status);
+        $this->assertInstanceOf(PaymentFailureData::class, $returnedPayment->FailureData);
+        $this->assertEquals($apiResponseData->FailureData->Code, $returnedPayment->FailureData->Code);
+        $this->assertEquals($apiResponseData->FailureData->Description, $returnedPayment->FailureData->Description);
+        $this->assertTrue($returnedPayment->FailureData->IsDecline);
     }
 
     public function testGetPaymentThrowsExceptionOnError()
@@ -150,11 +206,17 @@ class PaymentServiceTest extends MockeryTestCase
         $payment1StdClass->Id = 1;
         $payment1StdClass->Status = 'Settled';
         $payment1StdClass->Amount = 50.00;
+        $payment1StdClass->FailureData = null;
 
         $payment2StdClass = new stdClass();
         $payment2StdClass->Id = 2;
-        $payment2StdClass->Status = 'Posted';
+        $payment2StdClass->Status = 'Failed';
         $payment2StdClass->Amount = 75.00;
+        $payment2StdClass->FailureData = (object)[
+            'Code' => 'DF002',
+            'Description' => 'Card Declined',
+            'IsDecline' => true
+        ];
 
         $apiResponseDataArray = [$payment1StdClass, $payment2StdClass];
 
@@ -174,12 +236,20 @@ class PaymentServiceTest extends MockeryTestCase
         $this->assertIsArray($returnedPayments);
         $this->assertCount(2, $returnedPayments);
 
-        foreach ($returnedPayments as $index => $paymentEntity) {
-            $this->assertInstanceOf(Payment::class, $paymentEntity);
-            $this->assertEquals($apiResponseDataArray[$index]->Id, $paymentEntity->Id);
-            $this->assertEquals($apiResponseDataArray[$index]->Status, $paymentEntity->Status);
-            $this->assertEquals($apiResponseDataArray[$index]->Amount, $paymentEntity->Amount);
-        }
+        // Asserting Payment 1 (Success)
+        $this->assertInstanceOf(Payment::class, $returnedPayments[0]);
+        $this->assertEquals($payment1StdClass->Id, $returnedPayments[0]->Id);
+        $this->assertEquals($payment1StdClass->Status, $returnedPayments[0]->Status);
+        $this->assertNull($returnedPayments[0]->FailureData);
+
+        // Asserting Payment 2 (Failed)
+        $this->assertInstanceOf(Payment::class, $returnedPayments[1]);
+        $this->assertEquals($payment2StdClass->Id, $returnedPayments[1]->Id);
+        $this->assertEquals($payment2StdClass->Status, $returnedPayments[1]->Status);
+        $this->assertInstanceOf(PaymentFailureData::class, $returnedPayments[1]->FailureData);
+        $this->assertEquals($payment2StdClass->FailureData->Code, $returnedPayments[1]->FailureData->Code);
+        $this->assertEquals($payment2StdClass->FailureData->Description, $returnedPayments[1]->FailureData->Description);
+        $this->assertTrue($returnedPayments[1]->FailureData->IsDecline);
     }
 
     public function testListPaymentsThrowsExceptionOnError()
@@ -210,17 +280,20 @@ class PaymentServiceTest extends MockeryTestCase
     {
         $paymentId = 789;
         $apiResponseData = new stdClass();
-        $apiResponseData->Id = $paymentId;
-        $apiResponseData->Status = 'Reversed';
-        $apiResponseData->ReferenceId = 790;
-        // ... other properties returned by API
+        $apiResponseData->Id = $paymentId; // This is actually the ID of the *new* refund payment record
+        $apiResponseData->Status = 'Settled'; // Refunds are usually 'Settled' or 'Posted'
+        $apiResponseData->ReferenceId = 790; // Original Payment ID that was refunded
+        $apiResponseData->IsDebit = true; // Important for refunds
+        $apiResponseData->Amount = 10.00; // Amount of the refund
+        $apiResponseData->FailureData = null;
+        // ... other properties returned by API for a refund payment
 
         $this->apiClientMock->shouldReceive('put')
-            ->with("payment/{$paymentId}/reverse", [])
+            ->with("payment/{$paymentId}/reverse", []) // Here $paymentId is the ID of the payment to be refunded
             ->once()
             ->andReturn([
                 'error' => false,
-                'data' => $apiResponseData,
+                'data' => $apiResponseData, // This is the new Payment record for the refund
                 'meta' => (object)['HttpStatus' => 200]
             ]);
 
@@ -231,6 +304,9 @@ class PaymentServiceTest extends MockeryTestCase
         $this->assertEquals($apiResponseData->Id, $returnedPayment->Id);
         $this->assertEquals($apiResponseData->Status, $returnedPayment->Status);
         $this->assertEquals($apiResponseData->ReferenceId, $returnedPayment->ReferenceId);
+        $this->assertTrue($returnedPayment->IsDebit);
+        $this->assertEquals($apiResponseData->Amount, $returnedPayment->Amount);
+        $this->assertNull($returnedPayment->FailureData);
     }
 
     public function testRefundPaymentThrowsExceptionOnError()
@@ -263,6 +339,7 @@ class PaymentServiceTest extends MockeryTestCase
         $apiResponseData = new stdClass();
         $apiResponseData->Id = $paymentId;
         $apiResponseData->Status = 'Voided';
+        $apiResponseData->FailureData = null; // Voided payments shouldn't have new failure data
         // ... other properties returned by API
 
         $this->apiClientMock->shouldReceive('put')
@@ -280,6 +357,7 @@ class PaymentServiceTest extends MockeryTestCase
         $this->assertInstanceOf(Payment::class, $returnedPayment);
         $this->assertEquals($apiResponseData->Id, $returnedPayment->Id);
         $this->assertEquals($apiResponseData->Status, $returnedPayment->Status);
+        $this->assertNull($returnedPayment->FailureData);
     }
 
     public function testVoidPaymentThrowsExceptionOnError()

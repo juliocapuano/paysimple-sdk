@@ -28,41 +28,46 @@ class Customer
     public ?string $LastModified = null;
     public ?string $CreatedOn = null;
 
-    public static function fromStdClass(stdClass $data): self
+    public function __construct(?array $data = null)
     {
-        $customer = new self();
+        if ($data !== null) {
+            $this->Id = isset($data['Id']) ? (int)$data['Id'] : null;
+            $this->FirstName = $data['FirstName'] ?? null;
+            $this->LastName = $data['LastName'] ?? null;
+            $this->MiddleName = $data['MiddleName'] ?? null;
+            $this->Suffix = $data['Suffix'] ?? null;
+            $this->Company = $data['Company'] ?? null;
+            $this->CustomerAccount = $data['CustomerAccount'] ?? null;
+            $this->Email = $data['Email'] ?? null;
+            $this->AltEmail = $data['AltEmail'] ?? null;
+            $this->Phone = $data['Phone'] ?? null;
+            $this->AltPhone = $data['AltPhone'] ?? null;
+            $this->MobilePhone = $data['MobilePhone'] ?? null;
+            $this->Fax = $data['Fax'] ?? null;
+            $this->Website = $data['Website'] ?? null;
+            $this->Notes = $data['Notes'] ?? null;
 
-        $customer->Id = $data->Id ?? null;
-        $customer->FirstName = $data->FirstName ?? null;
-        $customer->LastName = $data->LastName ?? null;
-        $customer->MiddleName = $data->MiddleName ?? null;
-        $customer->Suffix = $data->Suffix ?? null;
-        $customer->Company = $data->Company ?? null;
-        $customer->CustomerAccount = $data->CustomerAccount ?? null;
-        $customer->Email = $data->Email ?? null;
-        $customer->AltEmail = $data->AltEmail ?? null;
-        $customer->Phone = $data->Phone ?? null;
-        $customer->AltPhone = $data->AltPhone ?? null;
-        $customer->MobilePhone = $data->MobilePhone ?? null;
-        $customer->Fax = $data->Fax ?? null;
-        $customer->Website = $data->Website ?? null;
-        $customer->Notes = $data->Notes ?? null;
+            if (isset($data['BillingAddress'])) {
+                if (is_array($data['BillingAddress'])) {
+                    $this->BillingAddress = new Address($data['BillingAddress']);
+                } elseif (is_object($data['BillingAddress'])) { // Handles stdClass from (array)$apiResponseData
+                    $this->BillingAddress = new Address((array)$data['BillingAddress']);
+                }
+            }
+            if (isset($data['ShippingAddress'])) {
+                if (is_array($data['ShippingAddress'])) {
+                    $this->ShippingAddress = new Address($data['ShippingAddress']);
+                } elseif (is_object($data['ShippingAddress'])) { // Handles stdClass
+                    $this->ShippingAddress = new Address((array)$data['ShippingAddress']);
+                }
+            }
 
-        if (isset($data->BillingAddress) && is_object($data->BillingAddress)) {
-            $customer->BillingAddress = Address::fromStdClass($data->BillingAddress);
+            // Default to true if not present in $data, matching existing property default
+            $this->ShippingSameAsBilling = isset($data['ShippingSameAsBilling']) ? (bool)$data['ShippingSameAsBilling'] : true;
+
+            $this->LastModified = $data['LastModified'] ?? null;
+            $this->CreatedOn = $data['CreatedOn'] ?? null;
         }
-        if (isset($data->ShippingAddress) && is_object($data->ShippingAddress)) {
-            $customer->ShippingAddress = Address::fromStdClass($data->ShippingAddress);
-        }
-        // API response for GET has ShippingSameAsBilling as boolean
-        if (isset($data->ShippingSameAsBilling)) {
-            $customer->ShippingSameAsBilling = (bool)$data->ShippingSameAsBilling;
-        }
-
-        $customer->LastModified = $data->LastModified ?? null;
-        $customer->CreatedOn = $data->CreatedOn ?? null;
-
-        return $customer;
     }
 
     public function toArray(): array

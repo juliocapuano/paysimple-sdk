@@ -3,6 +3,7 @@
 namespace PaySimple\V4\Entities;
 
 use stdClass;
+use PaySimple\V4\Entities\ReceiptOptions;
 
 class RecurringPaymentSchedule
 {
@@ -31,17 +32,8 @@ class RecurringPaymentSchedule
     public ?int $ExecutionFrequencyParameter = null;
     public ?string $Description = null;
 
-    // For convenience, directly on the entity, to be mapped to/from nested options
-    public ?bool $SendToCustomerOnSuccess = null;
-    public ?array $SendToOtherAddressesOnSuccess = null; // array of strings
-    public ?bool $SendToCustomerOnFailure = null;
-    public ?array $SendToOtherAddressesOnFailure = null; // array of strings
-
-    // Raw request objects for receipt options (used by toArray)
-    // And can be populated by fromStdClass if API returns them nested
-    public ?object $SuccessReceiptOptions = null;
-    public ?object $FailureReceiptOptions = null;
-
+    public ?ReceiptOptions $SuccessReceiptOptions = null;
+    public ?ReceiptOptions $FailureReceiptOptions = null;
 
     public static function fromStdClass(stdClass $data): self
     {
@@ -70,16 +62,11 @@ class RecurringPaymentSchedule
         $schedule->LastModified = $data->LastModified ?? null;
         $schedule->CreatedOn = $data->CreatedOn ?? null;
 
-        // Handle receipt options (API typically returns them nested if set)
         if (isset($data->SuccessReceiptOptions) && is_object($data->SuccessReceiptOptions)) {
-            $schedule->SuccessReceiptOptions = $data->SuccessReceiptOptions;
-            $schedule->SendToCustomerOnSuccess = $data->SuccessReceiptOptions->SendToCustomer ?? null;
-            $schedule->SendToOtherAddressesOnSuccess = $data->SuccessReceiptOptions->SendToOtherAddresses ?? null;
+            $schedule->SuccessReceiptOptions = ReceiptOptions::fromStdClass($data->SuccessReceiptOptions);
         }
         if (isset($data->FailureReceiptOptions) && is_object($data->FailureReceiptOptions)) {
-            $schedule->FailureReceiptOptions = $data->FailureReceiptOptions;
-            $schedule->SendToCustomerOnFailure = $data->FailureReceiptOptions->SendToCustomer ?? null;
-            $schedule->SendToOtherAddressesOnFailure = $data->FailureReceiptOptions->SendToOtherAddresses ?? null;
+            $schedule->FailureReceiptOptions = ReceiptOptions::fromStdClass($data->FailureReceiptOptions);
         }
 
         return $schedule;
@@ -123,28 +110,12 @@ class RecurringPaymentSchedule
             $array['Description'] = $this->Description;
         }
 
-        // Construct SuccessReceiptOptions for request
-        $successOptions = [];
-        if ($this->SendToCustomerOnSuccess !== null) {
-            $successOptions['SendToCustomer'] = $this->SendToCustomerOnSuccess;
-        }
-        if ($this->SendToOtherAddressesOnSuccess !== null && !empty($this->SendToOtherAddressesOnSuccess)) {
-            $successOptions['SendToOtherAddresses'] = $this->SendToOtherAddressesOnSuccess;
-        }
-        if (!empty($successOptions)) {
-            $array['SuccessReceiptOptions'] = $successOptions;
+        if ($this->SuccessReceiptOptions !== null) {
+            $array['SuccessReceiptOptions'] = $this->SuccessReceiptOptions->toArray();
         }
 
-        // Construct FailureReceiptOptions for request
-        $failureOptions = [];
-        if ($this->SendToCustomerOnFailure !== null) {
-            $failureOptions['SendToCustomer'] = $this->SendToCustomerOnFailure;
-        }
-        if ($this->SendToOtherAddressesOnFailure !== null && !empty($this->SendToOtherAddressesOnFailure)) {
-            $failureOptions['SendToOtherAddresses'] = $this->SendToOtherAddressesOnFailure;
-        }
-        if (!empty($failureOptions)) {
-            $array['FailureReceiptOptions'] = $failureOptions;
+        if ($this->FailureReceiptOptions !== null) {
+            $array['FailureReceiptOptions'] = $this->FailureReceiptOptions->toArray();
         }
 
         // Id is required for Update requests, not for New.

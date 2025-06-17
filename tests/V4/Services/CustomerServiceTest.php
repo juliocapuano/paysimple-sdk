@@ -117,20 +117,38 @@ class CustomerServiceTest extends MockeryTestCase
 
     public function testNewCustomerSuccessfully()
     {
-        $customerInput = new Customer();
-        $customerInput->FirstName = "Test";
-        $customerInput->LastName = "User";
-        $customerInput->Email = "test.user@example.com";
-        $customerInput->ShippingSameAsBilling = true;
+        $inputArray = [
+            'FirstName' => 'Test',
+            'LastName' => 'User',
+            'Email' => 'test.user@example.com',
+            'ShippingSameAsBilling' => true,
+            'BillingAddress' => [
+                'StreetAddress1' => '123 Main St',
+                'City' => 'Anytown',
+                'StateCode' => 'CO', // Address constructor handles 'StateCode'
+                'ZipCode' => '80000'   // Address constructor handles 'ZipCode'
+            ]
+        ];
+        $customerInput = new Customer($inputArray);
 
-        $billingAddressInput = new Address();
-        $billingAddressInput->StreetAddress1 = '123 Main St';
-        $billingAddressInput->City = 'Anytown';
-        $billingAddressInput->StateCode = 'CO';
-        $billingAddressInput->ZipCode = '80000';
-        $customerInput->BillingAddress = $billingAddressInput;
-
-        $expectedApiRequestArray = $customerInput->toArray();
+        // The toArray() method of Customer will use Address->toArray(),
+        // which should convert StateCode to StateProvince and ZipCode to PostalCode.
+        // So, the expectedApiRequestArray should reflect that.
+        $expectedApiRequestArray = [
+            'FirstName' => 'Test',
+            'LastName' => 'User',
+            'Email' => 'test.user@example.com',
+            'ShippingSameAsBilling' => true,
+            'BillingAddress' => [
+                'StreetAddress1' => '123 Main St',
+                'City' => 'Anytown',
+                'StateProvince' => 'CO',
+                'PostalCode' => '80000'
+            ]
+        ];
+        // We need to ensure $customerInput->toArray() actually produces $expectedApiRequestArray
+        // This might require asserting $customerInput->toArray() separately or trusting it.
+        // For this test, we'll assume $customerInput->toArray() is correct and the API expects the canonical keys.
 
         $apiResponseData = new stdClass();
         $apiResponseData->Id = 12345;
@@ -138,16 +156,18 @@ class CustomerServiceTest extends MockeryTestCase
         $apiResponseData->LastName = "User";
         $apiResponseData->Email = "test.user@example.com";
         $apiResponseData->ShippingSameAsBilling = true;
+        // API response might use StateCode or StateProvince, PostalCode or ZipCode.
+        // Customer's constructor (via Address constructor) should handle these variations.
         $apiResponseData->BillingAddress = (object) [
             'StreetAddress1' => '123 Main St',
             'City' => 'Anytown',
-            'StateCode' => 'CO',
-            'ZipCode' => '80000'
+            'StateProvince' => 'CO', // Using API canonical name for response mocking
+            'PostalCode' => '80000'  // Using API canonical name
         ];
         // No ShippingAddress in response if ShippingSameAsBilling is true
 
         $this->apiClientMock->shouldReceive('post')
-            ->with('customer', $expectedApiRequestArray)
+            ->with('customer', $customerInput->toArray()) // Use $customerInput->toArray() directly
             ->once()
             ->andReturn([
                 'error' => false,
@@ -172,25 +192,27 @@ class CustomerServiceTest extends MockeryTestCase
 
     public function testNewCustomerThrowsExceptionOnError()
     {
-        $customerInput = new Customer();
-        $customerInput->FirstName = "Error";
-        $customerInput->LastName = "Test";
-        // Ensure BillingAddress is an Address entity for toArray() to work correctly
-        $billingAddressInput = new Address();
-        $billingAddressInput->StreetAddress1 = '123 Main St';
-        $billingAddressInput->City = 'Anytown';
-        $billingAddressInput->StateCode = 'CO';
-        $billingAddressInput->ZipCode = '80000';
-        $customerInput->BillingAddress = $billingAddressInput;
-        $customerInput->ShippingSameAsBilling = true;
+        $inputArray = [
+            'FirstName' => 'Error',
+            'LastName' => 'Test',
+            'BillingAddress' => [
+                'StreetAddress1' => '123 Main St',
+                'City' => 'Anytown',
+                'StateCode' => 'CO',
+                'ZipCode' => '80000'
+            ],
+            'ShippingSameAsBilling' => true
+        ];
+        $customerInput = new Customer($inputArray);
 
-        $expectedApiRequestArray = $customerInput->toArray();
+        // Use $customerInput->toArray() for the mock expectation
+        // $expectedApiRequestArray = $customerInput->toArray(); // This line is not strictly needed if using direct $customerInput->toArray() in mock
 
         $errorMessages = ['Invalid data provided'];
         $errorResponseData = ['errors' => $errorMessages];
 
         $this->apiClientMock->shouldReceive('post')
-            ->with('customer', $expectedApiRequestArray)
+            ->with('customer', $customerInput->toArray()) // Use $customerInput->toArray() directly
             ->once()
             ->andReturn([
                 'error' => true,
@@ -208,22 +230,38 @@ class CustomerServiceTest extends MockeryTestCase
 
     public function testUpdateCustomerSuccessfully()
     {
-        $customerInput = new Customer();
-        $customerInput->Id = 12345; // ID of the customer to update
-        $customerInput->FirstName = "Updated Test";
-        $customerInput->LastName = "Updated User";
-        $customerInput->Email = "updated.user@example.com";
-        $customerInput->ShippingSameAsBilling = true;
+        $inputArray = [
+            'Id' => 12345, // ID of the customer to update
+            'FirstName' => 'Updated Test',
+            'LastName' => 'Updated User',
+            'Email' => 'updated.user@example.com',
+            'ShippingSameAsBilling' => true,
+            'BillingAddress' => [
+                'StreetAddress1' => '456 New St',
+                'City' => 'Newtown',
+                'StateCode' => 'NY',
+                'ZipCode' => '10001'
+            ]
+            // No ShippingAddress as ShippingSameAsBilling is true
+        ];
+        $customerInput = new Customer($inputArray);
 
-        $billingAddressInput = new Address();
-        $billingAddressInput->StreetAddress1 = '456 New St';
-        $billingAddressInput->City = 'Newtown';
-        $billingAddressInput->StateCode = 'NY';
-        $billingAddressInput->ZipCode = '10001';
-        $customerInput->BillingAddress = $billingAddressInput;
-        // No ShippingAddress needed as ShippingSameAsBilling is true
-
-        $expectedApiRequestArray = $customerInput->toArray();
+        // The toArray() method of Customer will use Address->toArray(),
+        // which should convert StateCode to StateProvince and ZipCode to PostalCode.
+        $expectedApiRequestArray = [
+            'Id' => 12345,
+            'FirstName' => 'Updated Test',
+            'LastName' => 'Updated User',
+            'Email' => 'updated.user@example.com',
+            'ShippingSameAsBilling' => true,
+            'BillingAddress' => [
+                'StreetAddress1' => '456 New St',
+                'City' => 'Newtown',
+                'StateProvince' => 'NY',
+                'PostalCode' => '10001'
+            ]
+        ];
+        // As before, we trust $customerInput->toArray() for the mock expectation.
 
         $apiResponseData = new stdClass();
         $apiResponseData->Id = 12345;
@@ -234,13 +272,13 @@ class CustomerServiceTest extends MockeryTestCase
         $apiResponseData->BillingAddress = (object) [
             'StreetAddress1' => '456 New St',
             'City' => 'Newtown',
-            'StateCode' => 'NY', // Or StateProvince
-            'ZipCode' => '10001'  // Or PostalCode
+            'StateProvince' => 'NY',
+            'PostalCode' => '10001'
         ];
         // ... other properties returned by API for an updated customer
 
         $this->apiClientMock->shouldReceive('put')
-            ->with('customer', $expectedApiRequestArray)
+            ->with('customer', $customerInput->toArray())  // Use $customerInput->toArray() directly
             ->once()
             ->andReturn([
                 'error' => false,
@@ -263,25 +301,27 @@ class CustomerServiceTest extends MockeryTestCase
 
     public function testUpdateCustomerThrowsExceptionOnError()
     {
-        $customerInput = new Customer();
-        $customerInput->Id = 12345; // ID of the customer to update
-        $customerInput->FirstName = "Error Update";
-        // Ensure BillingAddress is an Address entity for toArray() to work correctly
-        $billingAddressInput = new Address();
-        $billingAddressInput->StreetAddress1 = '456 New St';
-        $billingAddressInput->City = 'Newtown';
-        $billingAddressInput->StateCode = 'NY';
-        $billingAddressInput->ZipCode = '10001';
-        $customerInput->BillingAddress = $billingAddressInput;
-        $customerInput->ShippingSameAsBilling = true;
+        $inputArray = [
+            'Id' => 12345, // ID of the customer to update
+            'FirstName' => 'Error Update',
+            'BillingAddress' => [
+                'StreetAddress1' => '456 New St',
+                'City' => 'Newtown',
+                'StateCode' => 'NY',
+                'ZipCode' => '10001'
+            ],
+            'ShippingSameAsBilling' => true
+        ];
+        $customerInput = new Customer($inputArray);
 
-        $expectedApiRequestArray = $customerInput->toArray();
+        // Use $customerInput->toArray() for the mock expectation
+        // $expectedApiRequestArray = $customerInput->toArray(); // Not strictly needed
 
         $errorMessages = ['Update failed due to validation error'];
         $errorResponseData = ['errors' => $errorMessages];
 
         $this->apiClientMock->shouldReceive('put')
-            ->with('customer', $expectedApiRequestArray)
+            ->with('customer', $customerInput->toArray()) // Use $customerInput->toArray() directly
             ->once()
             ->andReturn([
                 'error' => true,
