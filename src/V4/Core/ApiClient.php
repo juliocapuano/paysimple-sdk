@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 namespace PaySimple\V4\Core;
 
@@ -13,14 +14,8 @@ use Psr\Http\Message\ResponseInterface;
  */
 class ApiClient
 {
-    /**
-     * @var Client
-     */
-    private $client;
-    /**
-     * @var bool
-     */
-    private $has_errors = false;
+    private Client $client;
+    private bool $has_errors = false;
 
     public function __construct(Config $config)
     {
@@ -29,15 +24,15 @@ class ApiClient
 
     /**
      * @param int $status_code
-     * @param Object $content
-     * @return array
+     * @param object $content
+     * @return array<string, mixed>
      */
     private function checkForStatusError(int $status_code, object $content): array
     {
         $this->has_errors = false;
         $data             = ['errors' => []];
 
-        if (in_array($status_code, Config::HTTP_ERRORS_CODES)) { // si son códigos de error
+        if (in_array($status_code, Config::HTTP_ERRORS_CODES, true)) { // si son códigos de error
             $this->has_errors = true;
             $api_errors       = $content->Meta->Errors;
 
@@ -50,7 +45,7 @@ class ApiClient
             }
         }
 
-        if (!in_array($status_code, Config::HTTP_SUCCESS_CODES)) { //si no son códigos de error pero tampoco de OK
+        if (!in_array($status_code, Config::HTTP_SUCCESS_CODES, true)) { // si no son códigos de error pero tampoco de OK
             $this->has_errors = true;
             $data['errors'][] = 'Unexpected: ' . json_encode($content);
         }
@@ -63,10 +58,9 @@ class ApiClient
         return [];
     }
 
-
     /**
      * @param ResponseInterface $response
-     * @return array
+     * @return array<string, mixed>
      */
     private function processResponse(ResponseInterface $response): array
     {
@@ -85,11 +79,10 @@ class ApiClient
         return compact('error', 'data', 'meta');
     }
 
-
     /**
      * @param string $endpoint
-     * @param array $data
-     * @return array
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function post(string $endpoint, array $data = []): array
@@ -100,8 +93,8 @@ class ApiClient
 
     /**
      * @param string $endpoint
-     * @param array $data
-     * @return array
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function get(string $endpoint, array $data = []): array
@@ -110,11 +103,10 @@ class ApiClient
         return $this->processResponse($response);
     }
 
-
     /**
      * @param string $endpoint
-     * @param array $data
-     * @return array
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function put(string $endpoint, array $data = []): array
@@ -125,8 +117,8 @@ class ApiClient
 
     /**
      * @param string $endpoint
-     * @param array $data
-     * @return array
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function delete(string $endpoint, array $data = []): array
@@ -135,9 +127,6 @@ class ApiClient
         return $this->processResponse($response);
     }
 
-    /**
-     * @return bool
-     */
     final public function hasErrors(): bool
     {
         return $this->has_errors;

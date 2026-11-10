@@ -1,18 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PaySimple\V4\Services;
 
 use GuzzleHttp\Exception\GuzzleException;
 
 class PaymentService extends Service
 {
-
     /**
      * Collect a payment for the specified AccountId.
      *
      * @see https://documentation.paysimple.com/reference/new-payment
-     * @param array $payment
-     * @return array
+     * @param array<string, mixed> $payment
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function new(array $payment): array
@@ -24,8 +25,7 @@ class PaymentService extends Service
      * Returns a payment object for the specified Id.
      *
      * @see https://documentation.paysimple.com/reference/payment
-     * @param int $payment_id
-     * @return array
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function get(int $payment_id): array
@@ -37,8 +37,8 @@ class PaymentService extends Service
      * Filterable and sortable list of all payment records.
      *
      * @see https://documentation.paysimple.com/reference/payments
-     * @param array $params
-     * @return array
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function list(array $params = []): array
@@ -50,8 +50,7 @@ class PaymentService extends Service
      * Refunds a settled payment of the specified Id.
      *
      * @see https://documentation.paysimple.com/reference/reverse-payment
-     * @param int $payment_id
-     * @return array
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function refund(int $payment_id): array
@@ -63,8 +62,7 @@ class PaymentService extends Service
      * Voids the payment of the specified id.
      *
      * @see https://documentation.paysimple.com/reference/void-payment
-     * @param int $payment_id
-     * @return array
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function void(int $payment_id): array

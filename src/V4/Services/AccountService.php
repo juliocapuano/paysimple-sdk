@@ -1,19 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PaySimple\V4\Services;
 
 use GuzzleHttp\Exception\GuzzleException;
 
 class AccountService extends Service
 {
-
     // --- Credit Card ---
     /**
      * Creates a new Credit Card Account object for the specified customer.
      *
      * @see https://documentation.paysimple.com/reference/new-credit-card
-     * @param array $credit_card
-     * @return array
+     * @param array<string, mixed> $credit_card
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function newCreditCard(array $credit_card): array
@@ -25,8 +26,7 @@ class AccountService extends Service
      * Returns the Credit Card object for the specified account id.
      *
      * @see https://documentation.paysimple.com/reference/credit-card
-     * @param int $account_id
-     * @return array
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function getCreditCard(int $account_id): array
@@ -38,8 +38,8 @@ class AccountService extends Service
      * Updates the ExpirationDate and/or BillingZipCode on the credit card for the account specified in the request body.
      *
      * @see https://documentation.paysimple.com/reference/update-credit-card
-     * @param array $credit_card
-     * @return array
+     * @param array<string, mixed> $credit_card
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function updateCreditCard(array $credit_card): array
@@ -48,11 +48,10 @@ class AccountService extends Service
     }
 
     /**
-     * Deletes the credit card object for the specified account.
+     * Deletes the Credit Card object for the specified account id.
      *
      * @see https://documentation.paysimple.com/reference/delete-credit-card
-     * @param int $account_id
-     * @return array
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function deleteCreditCard(int $account_id): array
@@ -61,15 +60,13 @@ class AccountService extends Service
     }
 
 
-
     // --- ACH ---
-
     /**
-     * Creates a new ACH Account object for the specified customer.
+     * Creates a new ACH (bank) Account for the specified customer.
      *
      * @see https://documentation.paysimple.com/reference/new-ach
-     * @param array $ach
-     * @return array
+     * @param array<string, mixed> $ach
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function newAch(array $ach): array
@@ -78,11 +75,10 @@ class AccountService extends Service
     }
 
     /**
-     * Returns a the ACH Account object for the specified account id.
+     * Returns the ACH Account object for the specified account id.
      *
-     * @see https://documentation.paysimple.com/reference/ach-record
-     * @param int $account_id
-     * @return array
+     * @see https://documentation.paysimple.com/reference/ach
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function getAch(int $account_id): array
@@ -91,11 +87,11 @@ class AccountService extends Service
     }
 
     /**
-     * Updates the IsCheckingAccounton the ACH Account object for the account specified in the request body.
+     * Updates the BankName, IsCheckingAccount and/or RoutingNumber on the ACH Account for the account specified in the request body.
      *
      * @see https://documentation.paysimple.com/reference/update-ach
-     * @param array $ach
-     * @return array
+     * @param array<string, mixed> $ach
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function updateAch(array $ach): array
@@ -104,11 +100,10 @@ class AccountService extends Service
     }
 
     /**
-     * Deletes the ACH (bank) Account object for the specified account.
+     * Deletes the ACH Account object for the specified account id.
      *
      * @see https://documentation.paysimple.com/reference/delete-ach
-     * @param int $account_id
-     * @return array
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function deleteAch(int $account_id): array
