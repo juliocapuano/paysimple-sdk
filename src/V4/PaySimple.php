@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PaySimple\V4;
 
 use PaySimple\V4\Core\ApiClient;
@@ -16,28 +18,17 @@ use PaySimple\V4\Services\RecurringPaymentsService;
  */
 class PaySimple
 {
+    private ApiClient $client;
 
-    /**
-     * @var ApiClient
-     */
-    private $client;
-
-    /**
-     * @param string $user
-     * @param string $token
-     * @param bool $sandbox
-     */
     public function __construct(string $user, string $token, bool $sandbox = false)
     {
         $config       = new Config($user, $token, $sandbox);
         $this->client = new ApiClient($config);
     }
 
-
     /**
      * Customer Api endpoints
      * @see https://documentation.paysimple.com/reference#customer-object
-     * @return CustomerService
      */
     public function customers(): CustomerService
     {
@@ -47,7 +38,6 @@ class PaySimple
     /**
      * Accounts Api endpoints
      * @see https://documentation.paysimple.com/reference#managing-customer-payment-accounts
-     * @return AccountService
      */
     public function accounts(): AccountService
     {
@@ -57,7 +47,6 @@ class PaySimple
     /**
      * Payments Api endpoints
      * @see https://documentation.paysimple.com/reference#payment
-     * @return PaymentService
      */
     public function payments(): PaymentService
     {
@@ -65,9 +54,8 @@ class PaySimple
     }
 
     /**
-     * Payments Api endpoints
+     * Recurring Payments Api endpoints
      * @see https://documentation.paysimple.com/reference#payment
-     * @return RecurringPaymentsService
      */
     public function recurringPayments(): RecurringPaymentsService
     {
@@ -75,9 +63,8 @@ class PaySimple
     }
 
     /**
-     * Payments Api endpoints
+     * Merchant Api endpoints
      * @see https://documentation.paysimple.com/reference#payment
-     * @return MerchantService
      */
     public function merchant(): MerchantService
     {

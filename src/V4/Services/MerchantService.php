@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PaySimple\V4\Services;
 
 use GuzzleHttp\Exception\GuzzleException;
@@ -11,12 +13,11 @@ use GuzzleHttp\Exception\GuzzleException;
  */
 class MerchantService extends Service
 {
-
     /**
      * Get enabled credit card and payment types for merchant
      *
      * @see https://documentation.paysimple.com/reference/payment-options
-     * @return array
+     * @return array<string, mixed>
      * @throws GuzzleException
      */
     final public function paymentOptions(): array
